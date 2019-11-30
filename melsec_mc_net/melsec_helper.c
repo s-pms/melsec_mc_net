@@ -225,9 +225,8 @@ byte_array_info build_bytes_from_address(int address, melse_mc_data_type type)
 
 #ifdef WIN32
 	_itoa(address, buffer, type.from_base);
-#elif
+#else
 	itoa(address, buffer, type.from_base);
-#elif
 #endif
 	address = atoi(buffer);
 	return build_ascii_bytes_from_int(address);

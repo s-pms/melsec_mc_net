@@ -6,7 +6,7 @@ export BUILD_ROOT = $(shell pwd)
 export INCLUDE_PATH = $(BUILD_ROOT)/include
 
 #定义我们要编译的目录
-BUILD_DIR = $(BUILD_ROOT)/MelsecMcNet/
+BUILD_DIR = $(BUILD_ROOT)/melsec_mc_net/
 
 #编译时是否生成调试信息。GNU调试器可以利用该信息
 #很多调试工具，包括Valgrind工具集都会因为这个为true能够输出更多的调试信息；

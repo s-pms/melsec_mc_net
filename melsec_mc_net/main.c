@@ -159,15 +159,12 @@ int main(int argc, char** argv)
 
 		printf("All Failed count: %d\n", faild_count);
 
-		goto lbl_exit;
 
-		mc_remote_run(fd);
-		mc_remote_stop(fd);
-		mc_remote_reset(fd);
-		mc_disconnect(fd);
+		//mc_remote_run(fd);
+		//mc_remote_stop(fd);
+		//mc_remote_reset(fd);
+		//mc_disconnect(fd);
 	}
-
-lbl_exit:
 
 #ifdef WIN32
 	WSACleanup();
