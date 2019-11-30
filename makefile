@@ -1,4 +1,4 @@
-﻿
+
 include config.mk
 all:
 #-C是指定目录

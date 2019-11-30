@@ -1,4 +1,4 @@
-﻿#include "melsec_mc_bin.h"
+#include "melsec_mc_bin.h"
 #include "melsec_mc_ascii.h"
 #ifdef WIN32
 #include <WinSock2.h>
