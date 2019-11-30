@@ -394,11 +394,7 @@ int mc_read_response(int fd, byte_array_info *response)
 
 	if (fd < 0 || response->length <= 0) return -1;
 
-#ifdef WIN32
 	nread = (int)recv(fd, ptr, response->length, 0);
-#else
-	nread = (int)read(fd, ptr, (size_t)response->length);
-#endif
 
 	if (nread < 0) {
 		return -1;

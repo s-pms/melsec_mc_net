@@ -51,11 +51,7 @@ int mc_write_msg(int fd, void *buf, int nbytes) {
 	nleft = nbytes;
 
 	while (nleft > 0) {
-#ifdef WIN32
 		nwritten = (int)send(fd, (char*)ptr, (size_t)nleft, 0);
-#else
-		nwritten = (int)write(fd, (char *)ptr, (size_t)nleft);
-#endif
 		if (nwritten <= 0) {
 			if (errno == EINTR)
 				continue;
@@ -80,11 +76,7 @@ int mc_read_msg(int fd, void *buf, int nbytes) {
 	if (fd < 0) return -1;
 
 	while (nleft > 0) {
-#ifdef WIN32
 		nread = (int)recv(fd, ptr, nleft, 0);
-#else
-		nread = (int)read(fd, ptr, (size_t)nleft);
-#endif
 		if (nread == 0) {
 			break;
 		}
