@@ -23,13 +23,13 @@
     <ProjectGuid>{181055E5-C375-4C97-84A2-90CD807A17FD}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>melsec_mc_net</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -42,7 +42,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
@@ -156,7 +156,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.c" />
-    <ClCompile Include="mc_command.c" />
     <ClCompile Include="melsec_helper.c" />
     <ClCompile Include="melsec_mc_ascii.c" />
     <ClCompile Include="melsec_mc_bin.c" />
@@ -165,10 +164,10 @@
     <ClCompile Include="utill.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="mc_command.h" />
     <ClInclude Include="melsec_helper.h" />
     <ClInclude Include="melsec_mc_ascii.h" />
     <ClInclude Include="melsec_mc_bin.h" />
+    <ClInclude Include="melsec_mc_bin_private.h" />
     <ClInclude Include="melsec_mc_comm.h" />
     <ClInclude Include="socket.h" />
     <ClInclude Include="utill.h" />

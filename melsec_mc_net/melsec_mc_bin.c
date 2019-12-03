@@ -1,4 +1,5 @@
 #include "melsec_mc_bin.h"
+#include "melsec_mc_bin_private.h"
 #include "melsec_mc_comm.h"
 #include "melsec_helper.h"
 #include "utill.h"

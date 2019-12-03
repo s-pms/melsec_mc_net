@@ -164,7 +164,7 @@ int main(int argc, char** argv)
 		//mc_remote_run(fd);
 		//mc_remote_stop(fd);
 		//mc_remote_reset(fd);
-		//mc_disconnect(fd);
+		mc_disconnect(fd);
 	}
 
 #ifdef WIN32
