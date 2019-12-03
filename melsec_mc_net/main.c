@@ -78,7 +78,7 @@ int main(int argc, char** argv)
 
 			//////////////////////////////////////////////////////////////////////////
 			int32 w_i_val = 12345;
-			ret = mc_write_int32(fd, "D0", w_i_val);
+			ret = mc_write_int32(fd, "D100", w_i_val);
 			printf("Write\t D100 \tint32:\t %d, \tret: %d\n", w_i_val, ret);
 			GET_RESULT(ret);
 
