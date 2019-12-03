@@ -4,6 +4,7 @@
 #include <WinSock2.h>
 #endif
 #include <stdio.h>
+#include <stdlib.h>
 #pragma warning( disable : 4996)
 
 #define GET_RESULT(ret){ if(!ret) faild_count++; }

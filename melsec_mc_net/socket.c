@@ -1,5 +1,6 @@
 #include "socket.h"
 #include <stdio.h>
+#include <string.h>
 
 #ifdef WIN32
 #include <winsock2.h>
@@ -13,36 +14,6 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #endif
-
-unsigned int ip2uint(const char *const ip_addr);
-
-// Function converting an IP address string to an unsigned int.
-unsigned int ip2uint(const char *const ip_addr) {
-	char ip_addr_cpy[20];
-	char ip[5];
-
-	strcpy(ip_addr_cpy, ip_addr);
-
-	char *s_start, *s_end;
-	s_start = ip_addr_cpy;
-	s_end = ip_addr_cpy;
-
-	int k;
-
-	for (k = 0; *s_start != '\0'; s_start = s_end) {
-		for (s_end = s_start; *s_end != '.' && *s_end != '\0'; s_end++) {
-		}
-		if (*s_end == '.') {
-			*s_end = '\0';
-			s_end++;
-		}
-		ip[k++] = (char)atoi(s_start);
-	}
-
-	ip[k] = '\0';
-
-	return *((unsigned int *)ip);
-}
 
 int mc_write_msg(int fd, void *buf, int nbytes) {
 	int   nleft, nwritten;

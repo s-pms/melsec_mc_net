@@ -11,6 +11,4 @@ int mc_open_tcp_client_socket(char *ip, short port);
 
 void mc_close_tcp_socket(int sockFd);
 
-void tinet_ntoa(char *ipstr, unsigned int ip);
-
 #endif //__SOCKET_H_
