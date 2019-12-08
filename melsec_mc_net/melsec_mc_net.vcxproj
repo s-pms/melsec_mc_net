@@ -170,6 +170,7 @@
     <ClInclude Include="melsec_mc_bin_private.h" />
     <ClInclude Include="melsec_mc_comm.h" />
     <ClInclude Include="socket.h" />
+    <ClInclude Include="typedef.h" />
     <ClInclude Include="utill.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

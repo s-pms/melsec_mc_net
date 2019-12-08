@@ -6,3 +6,5 @@ BUILD_DIR = $(BUILD_ROOT)/melsec_mc_net/
 
 export DEBUG = true
 
+export BUILD_SO = true
+

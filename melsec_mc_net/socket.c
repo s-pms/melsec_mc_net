@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <windows.h>
@@ -15,9 +15,9 @@
 #include <unistd.h>
 #endif
 
-int mc_write_msg(int fd, void *buf, int nbytes) {
+int mc_write_msg(int fd, void* buf, int nbytes) {
 	int   nleft, nwritten;
-	char *ptr = (char *)buf;
+	char* ptr = (char*)buf;
 
 	nleft = nbytes;
 
@@ -38,9 +38,9 @@ int mc_write_msg(int fd, void *buf, int nbytes) {
 	return (nbytes - nleft);
 }
 
-int mc_read_msg(int fd, void *buf, int nbytes) {
+int mc_read_msg(int fd, void* buf, int nbytes) {
 	int   nleft, nread;
-	char *ptr = (char *)buf;
+	char* ptr = (char*)buf;
 
 	nleft = nbytes;
 
@@ -68,7 +68,7 @@ int mc_read_msg(int fd, void *buf, int nbytes) {
 	return (nbytes - nleft);
 }
 
-int mc_open_tcp_client_socket(char *destIp, short destPort) {
+int mc_open_tcp_client_socket(char* destIp, short destPort) {
 	int                sockFd = 0;
 	struct sockaddr_in serverAddr;
 	int                ret;
@@ -80,19 +80,19 @@ int mc_open_tcp_client_socket(char *destIp, short destPort) {
 #pragma warning(disable:4996)
 	}
 
-	memset((char *)&serverAddr, 0, sizeof(serverAddr));
+	memset((char*)&serverAddr, 0, sizeof(serverAddr));
 	serverAddr.sin_family = AF_INET;
 	serverAddr.sin_addr.s_addr = inet_addr(destIp);
 	serverAddr.sin_port = (uint16_t)htons((uint16_t)destPort);
 
-	ret = connect(sockFd, (struct sockaddr *)&serverAddr, sizeof(serverAddr));
+	ret = connect(sockFd, (struct sockaddr*) & serverAddr, sizeof(serverAddr));
 
 	if (ret != 0) {
 		mc_close_tcp_socket(sockFd);
 		sockFd = -1;
 	}
 
-#ifdef WIN32
+#ifdef _WIN32
 	int timeout = 5000; //5s
 	ret = setsockopt(sockFd, SOL_SOCKET, SO_SNDTIMEO, (const char*)&timeout, sizeof(timeout));
 	ret = setsockopt(sockFd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
@@ -108,7 +108,7 @@ int mc_open_tcp_client_socket(char *destIp, short destPort) {
 void mc_close_tcp_socket(int sockFd) {
 	if (sockFd > 0)
 	{
-#ifdef WIN32
+#ifdef _WIN32
 		closesocket(sockFd);
 #else
 		close(sockFd);
@@ -116,6 +116,6 @@ void mc_close_tcp_socket(int sockFd) {
 	}
 }
 
-void tinet_ntoa(char *ipstr, unsigned int ip) {
+void tinet_ntoa(char* ipstr, unsigned int ip) {
 	sprintf(ipstr, "%d.%d.%d.%d", ip & 0xFF, (ip >> 8) & 0xFF, (ip >> 16) & 0xFF, ip >> 24);
 }

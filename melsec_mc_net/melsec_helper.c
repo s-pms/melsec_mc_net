@@ -223,7 +223,7 @@ byte_array_info build_bytes_from_address(int address, melse_mc_data_type type)
 	char buffer[10];
 	memset(buffer, 0, 10);
 
-#ifdef WIN32
+#ifdef _WIN32
 	_itoa(address, buffer, type.from_base);
 #else
 	itoa(address, buffer, type.from_base);
@@ -373,7 +373,7 @@ bool check_CRC(byte_array_info arr_data)
 	return ret;
 }
 
-bool mc_parse_read_response(byte_array_info response, byte_array_info *data)
+bool mc_parse_read_response(byte_array_info response, byte_array_info* data)
 {
 	bool ret = false;
 	if (response.length == 0)
@@ -401,7 +401,7 @@ bool mc_parse_read_response(byte_array_info response, byte_array_info *data)
 	return ret;
 }
 
-bool mc_parse_write_response(byte_array_info response, byte_array_info *data)
+bool mc_parse_write_response(byte_array_info response, byte_array_info* data)
 {
 	bool ret = false;
 	if (response.length == 0)

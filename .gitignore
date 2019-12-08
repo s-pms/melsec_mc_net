@@ -50,3 +50,4 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+/melsec_mc_net/melsec_mc_net.vcxproj.user

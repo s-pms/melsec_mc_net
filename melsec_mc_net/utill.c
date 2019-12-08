@@ -5,7 +5,7 @@
 void short2bytes(short i, byte* bytes)
 {
 	int size = 2;
-	memset(bytes, 0, sizeof(byte) *  size);
+	memset(bytes, 0, sizeof(byte) * size);
 	bytes[0] = (byte)(0xff & i);
 	bytes[1] = (byte)((0xff00 & i) >> 8);
 }
@@ -19,7 +19,7 @@ short bytes2short(byte* bytes)
 
 void ushort2bytes(ushort i, byte* bytes) {
 	int size = 2;
-	memset(bytes, 0, sizeof(byte) *  size);
+	memset(bytes, 0, sizeof(byte) * size);
 	bytes[0] = (byte)(0xff & i);
 	bytes[1] = (byte)((0xff00 & i) >> 8);
 }
@@ -32,7 +32,7 @@ ushort bytes2ushort(byte* bytes) {
 
 void int2bytes(int32 i, byte* bytes) {
 	int size = 4;
-	memset(bytes, 0, sizeof(byte) *  size);
+	memset(bytes, 0, sizeof(byte) * size);
 	bytes[0] = (byte)(0xff & i);
 	bytes[1] = (byte)((0xff00 & i) >> 8);
 	bytes[2] = (byte)((0xff0000 & i) >> 16);
@@ -49,7 +49,7 @@ int32 bytes2int32(byte* bytes) {
 
 void uint2bytes(uint32 i, byte* bytes) {
 	int size = 4;
-	memset(bytes, 0, sizeof(byte) *  size);
+	memset(bytes, 0, sizeof(byte) * size);
 	bytes[0] = (byte)(0xff & i);
 	bytes[1] = (byte)((0xff00 & i) >> 8);
 	bytes[2] = (byte)((0xff0000 & i) >> 16);
@@ -67,7 +67,7 @@ uint32 bytes2uint32(byte* bytes) {
 void bigInt2bytes(int64 i, byte* bytes)
 {
 	int size = 8;
-	memset(bytes, 0, sizeof(byte) *  size);
+	memset(bytes, 0, sizeof(byte) * size);
 	bytes[0] = (byte)(0xff & i);
 	bytes[1] = (byte)(0xff & (i >> 8));
 	bytes[2] = (byte)(0xff & (i >> 16));
@@ -94,7 +94,7 @@ int64 bytes2bigInt(byte* bytes)
 void ubigInt2bytes(uint64 i, byte* bytes)
 {
 	int size = 8;
-	memset(bytes, 0, sizeof(byte) *  size);
+	memset(bytes, 0, sizeof(byte) * size);
 	bytes[0] = (byte)(0xff & i);
 	bytes[1] = (byte)(0xff & (i >> 8));
 	bytes[2] = (byte)(0xff & (i >> 16));
@@ -143,7 +143,7 @@ double bytes2double(byte* bytes)
 	return *(double*)&temp;
 }
 
-#ifndef WIN32
+#ifndef _WIN32
 /*
 =============
 itoa
@@ -157,69 +157,69 @@ PARAMS:
 =============
 */
 
-char* itoa (unsigned long long  value,  char str[],  int radix)
+char* itoa(unsigned long long  value, char str[], int radix)
 {
-    char        buf [66];
-    char*       dest = buf + sizeof(buf);
-    bool     sign = false;
+	char        buf[66];
+	char* dest = buf + sizeof(buf);
+	bool     sign = false;
 
-    if (value == 0) {
-        memcpy (str, "0", 2);
-        return str;
-    }
+	if (value == 0) {
+		memcpy(str, "0", 2);
+		return str;
+	}
 
-    if (radix < 0) {
-        radix = -radix;
-        if ( (long long) value < 0) {
-            value = -value;
-            sign = true;
-        }
-    }
+	if (radix < 0) {
+		radix = -radix;
+		if ((long long)value < 0) {
+			value = -value;
+			sign = true;
+		}
+	}
 
-    *--dest = '\0';
+	*--dest = '\0';
 
-    switch (radix)
-    {
-    case 16:
-        while (value) {
-            * --dest = '0' + (value & 0xF);
-            if (*dest > '9') *dest += 'A' - '9' - 1;
-            value >>= 4;
-        }
-        break;
-    case 10:
-        while (value) {
-            *--dest = '0' + (value % 10);
-            value /= 10;
-        }
-        break;
+	switch (radix)
+	{
+	case 16:
+		while (value) {
+			*--dest = '0' + (value & 0xF);
+			if (*dest > '9') *dest += 'A' - '9' - 1;
+			value >>= 4;
+		}
+		break;
+	case 10:
+		while (value) {
+			*--dest = '0' + (value % 10);
+			value /= 10;
+		}
+		break;
 
-    case 8:
-        while (value) {
-            *--dest = '0' + (value & 7);
-            value >>= 3;
-        }
-        break;
+	case 8:
+		while (value) {
+			*--dest = '0' + (value & 7);
+			value >>= 3;
+		}
+		break;
 
-    case 2:
-        while (value) {
-            *--dest = '0' + (value & 1);
-            value >>= 1;
-        }
-        break;
+	case 2:
+		while (value) {
+			*--dest = '0' + (value & 1);
+			value >>= 1;
+		}
+		break;
 
-    default:            // The slow version, but universal
-        while (value) {
-            *--dest = '0' + (value % radix);
-            if (*dest > '9') *dest += 'A' - '9' - 1;
-            value /= radix;
-        }
-        break;
-    }
+	default:            // The slow version, but universal
+		while (value) {
+			*--dest = '0' + (value % radix);
+			if (*dest > '9') *dest += 'A' - '9' - 1;
+			value /= radix;
+		}
+		break;
+	}
 
-    if (sign) *--dest = '-';
+	if (sign) *--dest = '-';
 
-    memcpy (str, dest, buf +sizeof(buf) - dest);
-    return str;
+	memcpy(str, dest, buf + sizeof(buf) - dest);
+	return str;
 }
 #endif

@@ -1,6 +1,5 @@
 #ifndef __H_MELSC_HELPER_H__
 #define __H_MELSC_HELPER_H__
-#include "utill.h"
 #include "melsec_mc_comm.h"
 
 byte_array_info  build_read_core_command(melsec_mc_address_data address_data, bool is_bit);
@@ -24,7 +23,7 @@ byte_array_info  calculate_CRC(byte_array_info  data);
 bool check_CRC(byte_array_info  data);
 
 //
-bool mc_parse_read_response(byte_array_info response, byte_array_info *data);
-bool mc_parse_write_response(byte_array_info response, byte_array_info *data);
+bool mc_parse_read_response(byte_array_info response, byte_array_info* data);
+bool mc_parse_write_response(byte_array_info response, byte_array_info* data);
 
 #endif//__H_MELSC_HELPER_H__

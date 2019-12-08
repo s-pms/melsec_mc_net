@@ -1,7 +1,9 @@
 #include "melsec_mc_bin.h"
 #include "melsec_mc_ascii.h"
-#ifdef WIN32
+#ifdef _WIN32
 #include <WinSock2.h>
+#else
+#include <dlfcn.h>
 #endif
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,14 +11,110 @@
 
 #define GET_RESULT(ret){ if(!ret) faild_count++; }
 
+//#define USE_SO
+
+#ifdef USE_SO
+typedef bool (*pmc_mc_connect)(char* ip_addr, int port, byte network_addr, byte station_addr);
+typedef bool (*pmc_mc_disconnect)(int fd);
+
+typedef bool (*pmc_write_bool)(int fd, const char* address, bool val);   //write
+typedef bool (*pmc_write_short)(int fd, const char* address, short val);
+typedef bool (*pmc_write_ushort)(int fd, const char* address, ushort val);
+typedef bool (*pmc_write_int32)(int fd, const char* address, int32 val);
+typedef bool (*pmc_write_uint32)(int fd, const char* address, uint32 val);
+typedef bool (*pmc_write_int64)(int fd, const char* address, int64 val);
+typedef bool (*pmc_write_uint64)(int fd, const char* address, uint64 val);
+typedef bool (*pmc_write_float)(int fd, const char* address, float val);
+typedef bool (*pmc_write_double)(int fd, const char* address, double val);
+typedef bool (*pmc_write_string)(int fd, const char* address, int length, const char* val);
+
+typedef bool (*pmc_read_bool)(int fd, const char* address, bool* val);   //read
+typedef bool (*pmc_read_short)(int fd, const char* address, short* val);
+typedef bool (*pmc_read_ushort)(int fd, const char* address, ushort* val);
+typedef bool (*pmc_read_int32)(int fd, const char* address, int32* val);
+typedef bool (*pmc_read_uint32)(int fd, const char* address, uint32* val);
+typedef bool (*pmc_read_int64)(int fd, const char* address, int64* val);
+typedef bool (*pmc_read_uint64)(int fd, const char* address, uint64* val);
+typedef bool (*pmc_read_float)(int fd, const char* address, float* val);
+typedef bool (*pmc_read_double)(int fd, const char* address, double* val);
+typedef bool (*pmc_read_string)(int fd, const char* address, int length, const char* val);
+
+pmc_mc_connect mc_connect;
+pmc_mc_disconnect mc_disconnect;
+
+pmc_write_bool mc_write_bool;
+pmc_write_short mc_write_short;
+pmc_write_ushort mc_write_ushort;
+pmc_write_int32 mc_write_int32;
+pmc_write_uint32 mc_write_uint32;
+pmc_write_int64 mc_write_int64;
+pmc_write_uint64 mc_write_uint64;
+pmc_write_float mc_write_float;
+pmc_write_double mc_write_double;
+pmc_write_string mc_write_string;
+
+pmc_read_bool mc_read_bool;
+pmc_read_short mc_read_short;
+pmc_read_ushort mc_read_ushort;
+pmc_read_int32 mc_read_int32;
+pmc_read_uint32 mc_read_uint32;
+pmc_read_int64 mc_read_int64;
+pmc_read_uint64 mc_read_uint64;
+pmc_read_float mc_read_float;
+pmc_read_double mc_read_double;
+pmc_read_string mc_read_string;
+
+void libso_fun(char* szdllpath)
+{
+	void* handle_so;
+	handle_so = dlopen(szdllpath, RTLD_NOW);
+	if (!handle_so)
+	{
+		printf("%s\n", dlerror());
+	}
+
+	mc_connect = (pmc_mc_connect)dlsym(handle_so, "mc_connect");
+	mc_disconnect = (pmc_mc_disconnect)dlsym(handle_so, "mc_disconnect");
+
+	mc_write_bool = (pmc_write_bool)dlsym(handle_so, "mc_write_bool");
+	mc_write_short = (pmc_write_short)dlsym(handle_so, "mc_write_short");
+	mc_write_ushort = (pmc_write_ushort)dlsym(handle_so, "mc_write_ushort");
+	mc_write_int32 = (pmc_write_int32)dlsym(handle_so, "mc_write_int32");
+	mc_write_uint32 = (pmc_write_uint32)dlsym(handle_so, "mc_write_uint32");
+	mc_write_int64 = (pmc_write_int64)dlsym(handle_so, "mc_write_int64");
+	mc_write_uint64 = (pmc_write_uint64)dlsym(handle_so, "mc_write_uint64");
+	mc_write_float = (pmc_write_float)dlsym(handle_so, "mc_write_float");
+	mc_write_double = (pmc_write_double)dlsym(handle_so, "mc_write_double");
+	mc_write_string = (pmc_write_string)dlsym(handle_so, "mc_write_string");
+
+	mc_read_bool = (pmc_read_bool)dlsym(handle_so, "mc_read_bool");
+	mc_read_short = (pmc_read_short)dlsym(handle_so, "mc_read_short");
+	mc_read_ushort = (pmc_read_ushort)dlsym(handle_so, "mc_read_ushort");
+	mc_read_int32 = (pmc_read_int32)dlsym(handle_so, "mc_read_int32");
+	mc_read_uint32 = (pmc_read_uint32)dlsym(handle_so, "mc_read_uint32");
+	mc_read_int64 = (pmc_read_int64)dlsym(handle_so, "mc_read_int64");
+	mc_read_uint64 = (pmc_read_uint64)dlsym(handle_so, "mc_read_uint64");
+	mc_read_float = (pmc_read_float)dlsym(handle_so, "mc_read_float");
+	mc_read_double = (pmc_read_double)dlsym(handle_so, "mc_read_double");
+	mc_read_string = (pmc_read_string)dlsym(handle_so, "mc_read_string");
+	return;
+}
+#endif
+
 int main(int argc, char** argv)
 {
-#ifdef WIN32
+#ifdef _WIN32
 	WSADATA wsa;
 	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
 	{
 		return -1;
 	}
+#endif
+
+#ifdef USE_SO
+	char szdllpath[1024];
+	strcpy(szdllpath, "../melsec_mc_net.so");
+	libso_fun(szdllpath);
 #endif
 
 	char* plc_ip = "192.168.0.235";
@@ -160,14 +258,13 @@ int main(int argc, char** argv)
 
 		printf("All Failed count: %d\n", faild_count);
 
-
 		//mc_remote_run(fd);
 		//mc_remote_stop(fd);
 		//mc_remote_reset(fd);
 		mc_disconnect(fd);
 	}
 
-#ifdef WIN32
+#ifdef _WIN32
 	WSACleanup();
 #endif
 }

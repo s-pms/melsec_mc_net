@@ -1,14 +1,12 @@
+#include "melsec_helper.h"
 #include "melsec_mc_bin.h"
 #include "melsec_mc_bin_private.h"
-#include "melsec_mc_comm.h"
-#include "melsec_helper.h"
-#include "utill.h"
 
 #include "socket.h"
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
-#ifdef WIN32
+#ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <windows.h>
@@ -40,7 +38,7 @@ bool mc_disconnect(int fd)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool read_bool_value(int fd, const char* address, int length, byte_array_info *out_bytes)
+bool read_bool_value(int fd, const char* address, int length, byte_array_info* out_bytes)
 {
 	bool ret = false;
 	melsec_mc_address_data address_data = mc_analysis_address(address, length);
@@ -72,7 +70,7 @@ bool read_bool_value(int fd, const char* address, int length, byte_array_info *o
 	return ret;
 }
 
-bool read_word_value(int fd, const char* address, int length, byte_array_info *out_bytes)
+bool read_word_value(int fd, const char* address, int length, byte_array_info* out_bytes)
 {
 	melsec_mc_address_data address_data = mc_analysis_address(address, length);
 	ushort already_finished = 0;
@@ -333,7 +331,7 @@ char* mc_read_plc_type(int fd)
 		free(cmd.data);
 	}
 
-	if (is_ok&& out_bytes.length > 0)
+	if (is_ok && out_bytes.length > 0)
 	{
 		return (char*)out_bytes.data;
 	}
@@ -368,7 +366,7 @@ byte_array_info pack_mc_command(byte_array_info* mc_core, byte network_number, b
 	return ret;
 }
 
-void extract_actual_bool_data(byte_array_info *response)
+void extract_actual_bool_data(byte_array_info* response)
 {
 	// Î»¶ÁÈ¡
 	int resp_len = response->length * 2;
@@ -388,10 +386,10 @@ void extract_actual_bool_data(byte_array_info *response)
 	response->length = resp_len;
 }
 
-int mc_read_response(int fd, byte_array_info *response)
+int mc_read_response(int fd, byte_array_info* response)
 {
 	int   nread = 0;
-	char *ptr = (char *)response->data;
+	char* ptr = (char*)response->data;
 
 	if (fd < 0 || response->length <= 0) return -1;
 
@@ -407,7 +405,7 @@ int mc_read_response(int fd, byte_array_info *response)
 
 //////////////////////////////////////////////////////////////////////////
 
-bool mc_read_bool(int fd, const char* address, bool *val)
+bool mc_read_bool(int fd, const char* address, bool* val)
 {
 	bool ret = false;
 	byte_array_info read_data;
@@ -421,7 +419,7 @@ bool mc_read_bool(int fd, const char* address, bool *val)
 	return ret;
 }
 
-bool mc_read_short(int fd, const char* address, short *val)
+bool mc_read_short(int fd, const char* address, short* val)
 {
 	bool ret = false;
 	byte_array_info read_data;
@@ -435,7 +433,7 @@ bool mc_read_short(int fd, const char* address, short *val)
 	return ret;
 }
 
-bool mc_read_ushort(int fd, const char* address, ushort *val)
+bool mc_read_ushort(int fd, const char* address, ushort* val)
 {
 	bool ret = false;
 	byte_array_info read_data;
@@ -449,7 +447,7 @@ bool mc_read_ushort(int fd, const char* address, ushort *val)
 	return ret;
 }
 
-bool mc_read_int32(int fd, const char* address, int32 *val)
+bool mc_read_int32(int fd, const char* address, int32* val)
 {
 	bool ret = false;
 	byte_array_info read_data;
@@ -463,7 +461,7 @@ bool mc_read_int32(int fd, const char* address, int32 *val)
 	return ret;
 }
 
-bool mc_read_uint32(int fd, const char* address, uint32 *val)
+bool mc_read_uint32(int fd, const char* address, uint32* val)
 {
 	bool ret = false;
 	byte_array_info read_data;
@@ -477,7 +475,7 @@ bool mc_read_uint32(int fd, const char* address, uint32 *val)
 	return ret;
 }
 
-bool mc_read_int64(int fd, const char* address, int64 *val)
+bool mc_read_int64(int fd, const char* address, int64* val)
 {
 	bool ret = false;
 	byte_array_info read_data;
@@ -491,7 +489,7 @@ bool mc_read_int64(int fd, const char* address, int64 *val)
 	return ret;
 }
 
-bool mc_read_uint64(int fd, const char* address, uint64 *val)
+bool mc_read_uint64(int fd, const char* address, uint64* val)
 {
 	bool ret = false;
 	byte_array_info read_data;
@@ -505,7 +503,7 @@ bool mc_read_uint64(int fd, const char* address, uint64 *val)
 	return ret;
 }
 
-bool mc_read_float(int fd, const char* address, float *val)
+bool mc_read_float(int fd, const char* address, float* val)
 {
 	bool ret = false;
 	byte_array_info read_data;
@@ -519,7 +517,7 @@ bool mc_read_float(int fd, const char* address, float *val)
 	return ret;
 }
 
-bool mc_read_double(int fd, const char* address, double *val)
+bool mc_read_double(int fd, const char* address, double* val)
 {
 	bool ret = false;
 	byte_array_info read_data;
@@ -533,7 +531,7 @@ bool mc_read_double(int fd, const char* address, double *val)
 	return ret;
 }
 
-bool mc_read_string(int fd, const char* address, int length, char **val)
+bool mc_read_string(int fd, const char* address, int length, char** val)
 {
 	bool ret = false;
 	if (length > 0)
@@ -544,7 +542,7 @@ bool mc_read_string(int fd, const char* address, int length, char **val)
 		ret = read_word_value(fd, address, length / 2, &read_data);
 		if (ret && read_data.length >= read_len)
 		{
-			char *ret_str = (char*)malloc(read_len);
+			char* ret_str = (char*)malloc(read_len);
 			memset(ret_str, 0, read_len);
 			memcpy(ret_str, read_data.data, read_len);
 			RELEASE_DATA(read_data.data);
@@ -707,7 +705,7 @@ bool mc_write_double(int fd, const char* address, double val)
 	return ret;
 }
 
-bool mc_write_string(int fd, const char* address, int length, const char *val)
+bool mc_write_string(int fd, const char* address, int length, const char* val)
 {
 	bool ret = false;
 	if (fd > 0 && address != NULL && val != NULL)

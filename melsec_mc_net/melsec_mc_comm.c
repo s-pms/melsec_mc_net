@@ -75,6 +75,7 @@ melsec_mc_address_data mc_analysis_address(const char* address, int length)
 	case 'L':
 	case 'l':
 	{
+		// LËø´æ¼ÌµçÆ÷
 		address_data.data_type = mc_create_data_type(0x92, 0x01, "L*", 10);
 		const char* real_addr = address + 1;
 		address_data.address_start = mc_convert_string_to_int(real_addr, address_data.data_type.from_base);
