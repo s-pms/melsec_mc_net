@@ -55,7 +55,7 @@ endif
 $(BIN):$(LINK_OBJ)
 	@echo "------------------------build $(VERSION) mode--------------------------------!!!"
 
-ifeq ("$(BUILD_SO)", true)
+ifeq ($(BUILD_SO), true)
 # gcc -o 是生成so
 	$(CC) -fPIC -shared -o $@.so $^
 else

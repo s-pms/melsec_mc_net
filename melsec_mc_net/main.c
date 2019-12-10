@@ -1,9 +1,5 @@
-#include "melsec_mc_bin.h"
-#include "melsec_mc_ascii.h"
 #ifdef _WIN32
 #include <WinSock2.h>
-#else
-#include <dlfcn.h>
 #endif
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,8 +8,31 @@
 #define GET_RESULT(ret){ if(!ret) faild_count++; }
 
 //#define USE_SO
+#ifndef USE_SO
+#include "melsec_mc_bin.h"
+#include "melsec_mc_ascii.h"
+#endif
 
 #ifdef USE_SO
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
+#include <errno.h>
+#include <arpa/inet.h>
+#include <memory.h>
+#include <dlfcn.h>
+#include <ctype.h>
+#include <time.h>
+#include <stdbool.h>
+
+#include "typedef.h"
+
+
+
 typedef bool (*pmc_mc_connect)(char* ip_addr, int port, byte network_addr, byte station_addr);
 typedef bool (*pmc_mc_disconnect)(int fd);
 
