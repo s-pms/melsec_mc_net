@@ -121,8 +121,6 @@ void main(int argc, char** argv)
 		printf("plc type: %s\n", type);
 		free(type);
 
-	if (fd > 0)
-	{
 		bool val = true;
 		ret = mc_write_bool(fd, "X1", val);
 		printf("Write\t X1 \tbool:\t %d, \tret: %d\n", val, ret);
