@@ -17,9 +17,9 @@ byte_array_info  build_ascii_bytes_from_bool_array(const bool* value, int length
 
 byte_array_info  trans_bool_array_to_byte_data(bool_array_info value);
 
-// ¼ÆËãFxĞ­ÒéÖ¸ÁîµÄºÍĞ£ÑéĞÅÏ¢
+// è®¡ç®—Fxåè®®æŒ‡ä»¤çš„å’Œæ ¡éªŒä¿¡æ¯
 byte_array_info  calculate_CRC(byte_array_info  data);
-// ¼ì²éÖ¸¶¨µÄºÍĞ£ÑéÊÇ·ñÊÇÕıÈ·µÄ
+// æ£€æŸ¥æŒ‡å®šçš„å’Œæ ¡éªŒæ˜¯å¦æ˜¯æ­£ç¡®çš„
 bool check_CRC(byte_array_info  data);
 
 //

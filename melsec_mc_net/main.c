@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #pragma warning( disable : 4996)
 
-#define GET_RESULT(ret){ if(!ret) faild_count++; }
+#define GET_RESULT(ret){ if(!ret) failed_count++; }
 
 //#define USE_SO
 #ifndef USE_SO
@@ -136,8 +136,8 @@ int main(int argc, char** argv)
 	libso_fun(szdllpath);
 #endif
 
-	char* plc_ip = "192.168.0.235";
-	int plc_port = 5002;
+	char* plc_ip = "192.168.123.131";
+	int plc_port = 6000;
 	if (argc > 1)
 	{
 		plc_ip = argv[1];
@@ -148,13 +148,15 @@ int main(int argc, char** argv)
 	{
 		bool ret = false;
 
+#if false
 		char* type = mc_read_plc_type(fd);
 		printf("plc type: %s\n", type);
 		free(type);
+#endif
 
 		const int TEST_COUNT = 5000;
 		const int TEST_SLEEP_TIME = 200;
-		int faild_count = 0;
+		int failed_count = 0;
 
 		for (int i = 0; i < TEST_COUNT; i++)
 		{
@@ -272,10 +274,10 @@ int main(int argc, char** argv)
 			free(str_val);
 			GET_RESULT(ret);
 
-			//Sleep(TEST_SLEEP_TIME);
+			Sleep(TEST_SLEEP_TIME);
 		}
 
-		printf("All Failed count: %d\n", faild_count);
+		printf("All Failed count: %d\n", failed_count);
 
 		//mc_remote_run(fd);
 		//mc_remote_stop(fd);

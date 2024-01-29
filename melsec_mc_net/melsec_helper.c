@@ -3,21 +3,21 @@
 #include <stdlib.h>
 #include "melsec_helper.h"
 
-// ´ÓÈýÁâµØÖ·£¬ÊÇ·ñÎ»¶ÁÈ¡½øÐÐ´´½¨¶ÁÈ¡µÄMCµÄºËÐÄ±¨ÎÄ
-// is_bit ÊÇ·ñ½øÐÐÁËÎ»¶ÁÈ¡²Ù×÷
+// ä»Žä¸‰è±åœ°å€ï¼Œæ˜¯å¦ä½è¯»å–è¿›è¡Œåˆ›å»ºè¯»å–çš„MCçš„æ ¸å¿ƒæŠ¥æ–‡
+// is_bit æ˜¯å¦è¿›è¡Œäº†ä½è¯»å–æ“ä½œ
 byte_array_info build_read_core_command(melsec_mc_address_data address_data, bool is_bit)
 {
 	byte* command = (byte*)malloc(10);
 
-	command[0] = 0x01;                                                      // ÅúÁ¿¶ÁÈ¡Êý¾ÝÃüÁî
+	command[0] = 0x01;                                                      // æ‰¹é‡è¯»å–æ•°æ®å‘½ä»¤
 	command[1] = 0x04;
-	command[2] = is_bit ? (byte)0x01 : (byte)0x00;                           // ÒÔµãÎªµ¥Î»»¹ÊÇ×ÖÎªµ¥Î»³ÉÅú¶ÁÈ¡
+	command[2] = is_bit ? (byte)0x01 : (byte)0x00;                           // ä»¥ç‚¹ä¸ºå•ä½è¿˜æ˜¯å­—ä¸ºå•ä½æˆæ‰¹è¯»å–
 	command[3] = 0x00;
-	command[4] = (byte)(address_data.address_start % 256);				// ÆðÊ¼µØÖ·µÄµØÎ»
+	command[4] = (byte)(address_data.address_start % 256);				// èµ·å§‹åœ°å€çš„åœ°ä½
 	command[5] = (byte)(address_data.address_start >> 8);
 	command[6] = (byte)(address_data.address_start >> 16);
-	command[7] = address_data.data_type.data_code;                           // Ö¸Ã÷¶ÁÈ¡µÄÊý¾Ý
-	command[8] = (byte)(address_data.length % 256);                          // ÈíÔª¼þµÄ³¤¶È
+	command[7] = address_data.data_type.data_code;                           // æŒ‡æ˜Žè¯»å–çš„æ•°æ®
+	command[8] = (byte)(address_data.length % 256);                          // è½¯å…ƒä»¶çš„é•¿åº¦
 	command[9] = (byte)(address_data.length >> 8);
 
 	byte_array_info ret;
@@ -26,25 +26,25 @@ byte_array_info build_read_core_command(melsec_mc_address_data address_data, boo
 	return ret;
 }
 
-// ´ÓÈýÁâµØÖ·£¬ÊÇ·ñÎ»¶ÁÈ¡½øÐÐ´´½¨¶ÁÈ¡Ascii¸ñÊ½µÄMCµÄºËÐÄ±¨ÎÄ
-// ÊÇ·ñ½øÐÐÁËÎ»¶ÁÈ¡²Ù×÷
+// ä»Žä¸‰è±åœ°å€ï¼Œæ˜¯å¦ä½è¯»å–è¿›è¡Œåˆ›å»ºè¯»å–Asciiæ ¼å¼çš„MCçš„æ ¸å¿ƒæŠ¥æ–‡
+// æ˜¯å¦è¿›è¡Œäº†ä½è¯»å–æ“ä½œ
 byte_array_info build_ascii_read_core_command(melsec_mc_address_data address_data, bool is_bit)
 {
 	byte* command = (byte*)malloc(20);
 
-	command[0] = 0x30;                                    // ÅúÁ¿¶ÁÈ¡Êý¾ÝÃüÁî
+	command[0] = 0x30;                                    // æ‰¹é‡è¯»å–æ•°æ®å‘½ä»¤
 	command[1] = 0x34;
 	command[2] = 0x30;
 	command[3] = 0x31;
-	command[4] = 0x30;                                   // ÒÔµãÎªµ¥Î»»¹ÊÇ×ÖÎªµ¥Î»³ÉÅú¶ÁÈ¡
+	command[4] = 0x30;                                   // ä»¥ç‚¹ä¸ºå•ä½è¿˜æ˜¯å­—ä¸ºå•ä½æˆæ‰¹è¯»å–
 	command[5] = 0x30;
 	command[6] = 0x30;
 	command[7] = is_bit ? (byte)0x31 : (byte)0x30;
-	command[8] = (byte)(address_data.data_type.ascii_code[0]);          // ÈíÔª¼þÀàÐÍ
+	command[8] = (byte)(address_data.data_type.ascii_code[0]);          // è½¯å…ƒä»¶ç±»åž‹
 	command[9] = (byte)(address_data.data_type.ascii_code[1]);
 
 	byte_array_info temp = build_bytes_from_address(address_data.address_start, address_data.data_type);
-	command[10] = temp.data[0];            // ÆðÊ¼µØÖ·µÄµØÎ»
+	command[10] = temp.data[0];            // èµ·å§‹åœ°å€çš„åœ°ä½
 	command[11] = temp.data[1];
 	command[12] = temp.data[2];
 	command[13] = temp.data[3];
@@ -53,7 +53,7 @@ byte_array_info build_ascii_read_core_command(melsec_mc_address_data address_dat
 	free(temp.data);
 
 	temp = build_ascii_bytes_from_ushort(address_data.length);
-	command[16] = temp.data[0];                               // ÈíÔª¼þµãÊý
+	command[16] = temp.data[0];                               // è½¯å…ƒä»¶ç‚¹æ•°
 	command[17] = temp.data[1];
 	command[18] = temp.data[2];
 	command[19] = temp.data[3];
@@ -72,15 +72,15 @@ byte_array_info build_write_word_core_command(melsec_mc_address_data address_dat
 		val_len = value.length;
 
 	byte* command = (byte*)malloc(10 + val_len);
-	command[0] = 0x01;											// ÅúÁ¿Ð´ÈëÊý¾ÝÃüÁî
+	command[0] = 0x01;											// æ‰¹é‡å†™å…¥æ•°æ®å‘½ä»¤
 	command[1] = 0x14;
-	command[2] = 0x00;											// ÒÔ×ÖÎªµ¥Î»³ÉÅú¶ÁÈ¡
+	command[2] = 0x00;											// ä»¥å­—ä¸ºå•ä½æˆæ‰¹è¯»å–
 	command[3] = 0x00;
-	command[4] = (byte)(address_data.address_start % 256);		// ÆðÊ¼µØÖ·µÄµØÎ»
+	command[4] = (byte)(address_data.address_start % 256);		// èµ·å§‹åœ°å€çš„åœ°ä½
 	command[5] = (byte)(address_data.address_start >> 8);
 	command[6] = (byte)(address_data.address_start >> 16);
-	command[7] = address_data.data_type.data_code;				// Ö¸Ã÷Ð´ÈëµÄÊý¾Ý
-	command[8] = (byte)((val_len >> 1) % 256);					// ÈíÔª¼þ³¤¶ÈµÄµØÎ»
+	command[7] = address_data.data_type.data_code;				// æŒ‡æ˜Žå†™å…¥çš„æ•°æ®
+	command[8] = (byte)((val_len >> 1) % 256);					// è½¯å…ƒä»¶é•¿åº¦çš„åœ°ä½
 	command[9] = (byte)((val_len >> 1) >> 8);
 	if (value.data != NULL)
 	{
@@ -104,19 +104,19 @@ byte_array_info build_ascii_write_word_core_command(melsec_mc_address_data addre
 		val_len = buffer.length;
 
 	byte* command = (byte*)malloc(20 + val_len);
-	command[0] = 0x31;                                  // ÅúÁ¿Ð´ÈëµÄÃüÁî
+	command[0] = 0x31;                                  // æ‰¹é‡å†™å…¥çš„å‘½ä»¤
 	command[1] = 0x34;
 	command[2] = 0x30;
 	command[3] = 0x31;
-	command[4] = 0x30;                                 // ×ÓÃüÁî
+	command[4] = 0x30;                                 // å­å‘½ä»¤
 	command[5] = 0x30;
 	command[6] = 0x30;
 	command[7] = 0x30;
-	command[8] = (byte)address_data.data_type.ascii_code[0]; // ÈíÔª¼þÀàÐÍ
+	command[8] = (byte)address_data.data_type.ascii_code[0]; // è½¯å…ƒä»¶ç±»åž‹
 	command[9] = (byte)address_data.data_type.ascii_code[1];
 
 	byte_array_info temp = build_bytes_from_address(address_data.address_start, address_data.data_type);
-	command[10] = temp.data[0];            // ÆðÊ¼µØÖ·µÄµØÎ»
+	command[10] = temp.data[0];            // èµ·å§‹åœ°å€çš„åœ°ä½
 	command[11] = temp.data[1];
 	command[12] = temp.data[2];
 	command[13] = temp.data[3];
@@ -125,7 +125,7 @@ byte_array_info build_ascii_write_word_core_command(melsec_mc_address_data addre
 	free(temp.data);
 
 	temp = build_ascii_bytes_from_ushort(address_data.length);
-	command[16] = temp.data[0];                               // ÈíÔª¼þµãÊý
+	command[16] = temp.data[0];                               // è½¯å…ƒä»¶ç‚¹æ•°
 	command[17] = temp.data[1];
 	command[18] = temp.data[2];
 	command[19] = temp.data[3];
@@ -150,15 +150,15 @@ byte_array_info build_write_bit_core_command(melsec_mc_address_data address_data
 	val_len = buffer.length;
 
 	byte* command = (byte*)malloc(10 + val_len);
-	command[0] = 0x01;                                       // ÅúÁ¿Ð´ÈëÊý¾ÝÃüÁî
+	command[0] = 0x01;                                       // æ‰¹é‡å†™å…¥æ•°æ®å‘½ä»¤
 	command[1] = 0x14;
-	command[2] = 0x01;                                       // ÒÔÎ»Îªµ¥Î»³ÉÅúÐ´Èë
+	command[2] = 0x01;                                       // ä»¥ä½ä¸ºå•ä½æˆæ‰¹å†™å…¥
 	command[3] = 0x00;
-	command[4] = (byte)(address_data.address_start % 256);   // ÆðÊ¼µØÖ·µÄµØÎ»
+	command[4] = (byte)(address_data.address_start % 256);   // èµ·å§‹åœ°å€çš„åœ°ä½
 	command[5] = (byte)(address_data.address_start >> 8);
 	command[6] = (byte)(address_data.address_start >> 16);
-	command[7] = address_data.data_type.data_code;            // Ö¸Ã÷¶ÁÈ¡µÄÊý¾Ý
-	command[8] = (byte)(address_data.length % 256);           // ÈíÔª¼þµÄ³¤¶È
+	command[7] = address_data.data_type.data_code;            // æŒ‡æ˜Žè¯»å–çš„æ•°æ®
+	command[8] = (byte)(address_data.length % 256);           // è½¯å…ƒä»¶çš„é•¿åº¦
 	command[9] = (byte)(address_data.length >> 8);
 
 	memcpy(command + 10, buffer.data, val_len);
@@ -180,18 +180,18 @@ byte_array_info build_ascii_write_bit_core_command(melsec_mc_address_data addres
 		val_len = buffer.length;
 
 	byte* command = (byte*)malloc(20 + val_len);
-	command[0] = 0x31;                                                                              // ÅúÁ¿Ð´ÈëµÄÃüÁî
+	command[0] = 0x31;                                                                              // æ‰¹é‡å†™å…¥çš„å‘½ä»¤
 	command[1] = 0x34;
 	command[2] = 0x30;
 	command[3] = 0x31;
-	command[4] = 0x30;                                                                              // ×ÓÃüÁî
+	command[4] = 0x30;                                                                              // å­å‘½ä»¤
 	command[5] = 0x30;
 	command[6] = 0x30;
 	command[7] = 0x31;
-	command[8] = (byte)address_data.data_type.ascii_code[0]; // ÈíÔª¼þÀàÐÍ
+	command[8] = (byte)address_data.data_type.ascii_code[0]; // è½¯å…ƒä»¶ç±»åž‹
 	command[9] = (byte)address_data.data_type.ascii_code[1];
 	byte_array_info temp = build_bytes_from_address(address_data.address_start, address_data.data_type);
-	command[10] = temp.data[0];            // ÆðÊ¼µØÖ·µÄµØÎ»
+	command[10] = temp.data[0];            // èµ·å§‹åœ°å€çš„åœ°ä½
 	command[11] = temp.data[1];
 	command[12] = temp.data[2];
 	command[13] = temp.data[3];
@@ -200,7 +200,7 @@ byte_array_info build_ascii_write_bit_core_command(melsec_mc_address_data addres
 	free(temp.data);
 
 	temp = build_ascii_bytes_from_ushort(address_data.length);
-	command[16] = temp.data[0];                               // ÈíÔª¼þµãÊý
+	command[16] = temp.data[0];                               // è½¯å…ƒä»¶ç‚¹æ•°
 	command[17] = temp.data[1];
 	command[18] = temp.data[2];
 	command[19] = temp.data[3];
@@ -419,7 +419,7 @@ bool mc_parse_write_response(byte_array_info response, byte_array_info* data)
 	uint16_t rsCode = code[0] * 256 + code[1];
 	ret = rsCode == 0 && rsCount == (response.length - min);
 
-	//code ÒÔºóµÄÄÚÈÝ·µ»Ø
+	//code ä»¥åŽçš„å†…å®¹è¿”å›ž
 	if (rsCount > 2 && (data != NULL))
 	{
 		data->data = (byte*)malloc(rsCount);

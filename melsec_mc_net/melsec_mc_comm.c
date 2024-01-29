@@ -30,7 +30,7 @@ melsec_mc_address_data mc_analysis_address(const char* address, int length)
 	case 'M':
 	case 'm':
 	{
-		// MÖĞ¼ä¼ÌµçÆ÷
+		// Mä¸­é—´ç»§ç”µå™¨
 		address_data.data_type = mc_create_data_type(0x90, 0x01, "M*", 10);
 		const char* real_addr = address + 1;
 		address_data.address_start = mc_convert_string_to_int(real_addr, address_data.data_type.from_base);
@@ -39,7 +39,7 @@ melsec_mc_address_data mc_analysis_address(const char* address, int length)
 	case 'X':
 	case 'x':
 	{
-		// XÊäÈë¼ÌµçÆ÷
+		// Xè¾“å…¥ç»§ç”µå™¨
 		address_data.data_type = mc_create_data_type(0x9C, 0x01, "X*", 16);
 		const char* real_addr = address + 1;
 		address_data.address_start = mc_convert_string_to_int(real_addr, address_data.data_type.from_base);
@@ -48,7 +48,7 @@ melsec_mc_address_data mc_analysis_address(const char* address, int length)
 	case 'Y':
 	case 'y':
 	{
-		//  YÊä³ö¼ÌµçÆ÷
+		//  Yè¾“å‡ºç»§ç”µå™¨
 		address_data.data_type = mc_create_data_type(0x9D, 0x01, "Y*", 16);
 		const char* real_addr = address + 1;
 		address_data.address_start = mc_convert_string_to_int(real_addr, address_data.data_type.from_base);
@@ -57,7 +57,7 @@ melsec_mc_address_data mc_analysis_address(const char* address, int length)
 	case 'D':
 	case 'd':
 	{
-		// DÊı¾İ¼Ä´æÆ÷
+		// Dæ•°æ®å¯„å­˜å™¨
 		address_data.data_type = mc_create_data_type(0xA8, 0x01, "D*", 10);
 		const char* real_addr = address + 1;
 		address_data.address_start = mc_convert_string_to_int(real_addr, address_data.data_type.from_base);
@@ -66,7 +66,7 @@ melsec_mc_address_data mc_analysis_address(const char* address, int length)
 	case 'W':
 	case 'w':
 	{
-		// WÁ´½Ó¼Ä´æÆ÷
+		// Wé“¾æ¥å¯„å­˜å™¨
 		address_data.data_type = mc_create_data_type(0xB4, 0x00, "W*", 16);
 		const char* real_addr = address + 1;
 		address_data.address_start = mc_convert_string_to_int(real_addr, address_data.data_type.from_base);
@@ -75,7 +75,7 @@ melsec_mc_address_data mc_analysis_address(const char* address, int length)
 	case 'L':
 	case 'l':
 	{
-		// LËø´æ¼ÌµçÆ÷
+		// Lé”å­˜ç»§ç”µå™¨
 		address_data.data_type = mc_create_data_type(0x92, 0x01, "L*", 10);
 		const char* real_addr = address + 1;
 		address_data.address_start = mc_convert_string_to_int(real_addr, address_data.data_type.from_base);
@@ -84,7 +84,7 @@ melsec_mc_address_data mc_analysis_address(const char* address, int length)
 	case 'F':
 	case 'f':
 	{
-		// F±¨¾¯Æ÷
+		// FæŠ¥è­¦å™¨
 		address_data.data_type = mc_create_data_type(0x93, 0x01, "F*", 10);
 		const char* real_addr = address + 1;
 		address_data.address_start = mc_convert_string_to_int(real_addr, address_data.data_type.from_base);
@@ -93,7 +93,7 @@ melsec_mc_address_data mc_analysis_address(const char* address, int length)
 	case 'V':
 	case 'v':
 	{
-		// V±ßÑØ¼ÌµçÆ÷
+		// Vè¾¹æ²¿ç»§ç”µå™¨
 		address_data.data_type = mc_create_data_type(0x94, 0x01, "V*", 10);
 		const char* real_addr = address + 1;
 		address_data.address_start = mc_convert_string_to_int(real_addr, address_data.data_type.from_base);
@@ -102,7 +102,7 @@ melsec_mc_address_data mc_analysis_address(const char* address, int length)
 	case 'B':
 	case 'b':
 	{
-		// BÁ´½Ó¼ÌµçÆ÷
+		// Bé“¾æ¥ç»§ç”µå™¨
 		address_data.data_type = mc_create_data_type(0xA0, 0x01, "B*", 16);
 		const char* real_addr = address + 1;
 		address_data.address_start = mc_convert_string_to_int(real_addr, address_data.data_type.from_base);
@@ -111,7 +111,7 @@ melsec_mc_address_data mc_analysis_address(const char* address, int length)
 	case 'R':
 	case 'r':
 	{
-		// RÎÄ¼ş¼Ä´æÆ÷
+		// Ræ–‡ä»¶å¯„å­˜å™¨
 		address_data.data_type = mc_create_data_type(0xAF, 0x01, "R*", 10);
 		const char* real_addr = address + 1;
 		address_data.address_start = mc_convert_string_to_int(real_addr, address_data.data_type.from_base);
@@ -123,25 +123,25 @@ melsec_mc_address_data mc_analysis_address(const char* address, int length)
 		const char* real_addr = address + 1;
 		if (address[1] == 'N' || address[1] == 'n')
 		{
-			// ÀÛ¼Æ¶¨Ê±Æ÷µÄµ±Ç°Öµ
+			// ç´¯è®¡å®šæ—¶å™¨çš„å½“å‰å€¼
 			address_data.data_type = mc_create_data_type(0xC8, 0x00, "SN", 100);
 			real_addr = address + 2;
 		}
 		else if (address[1] == 'S' || address[1] == 's')
 		{
-			// ÀÛ¼Æ¶¨Ê±Æ÷µÄ´¥µã
+			// ç´¯è®¡å®šæ—¶å™¨çš„è§¦ç‚¹
 			address_data.data_type = mc_create_data_type(0xC7, 0x01, "SS", 10);
 			real_addr = address + 2;
 		}
 		else if (address[1] == 'C' || address[1] == 'c')
 		{
-			// ÀÛ¼Æ¶¨Ê±Æ÷µÄÏßÈ¦
+			// ç´¯è®¡å®šæ—¶å™¨çš„çº¿åœˆ
 			address_data.data_type = mc_create_data_type(0xC6, 0x01, "SC", 10);
 			real_addr = address + 2;
 		}
 		else
 		{
-			// S²½½ø¼ÌµçÆ÷
+			// Sæ­¥è¿›ç»§ç”µå™¨
 			address_data.data_type = mc_create_data_type(0x98, 0x01, "S*", 10);
 		}
 
@@ -154,13 +154,13 @@ melsec_mc_address_data mc_analysis_address(const char* address, int length)
 		const char* real_addr = address + 1;
 		if (address[1] == 'R' || address[1] == 'r')
 		{
-			// ÎÄ¼ş¼Ä´æÆ÷ZRÇø
+			// æ–‡ä»¶å¯„å­˜å™¨ZRåŒº
 			address_data.data_type = mc_create_data_type(0xB0, 0x00, "ZR", 16);
 			real_addr = address + 2;
 		}
 		else
 		{
-			// ±äÖ·¼Ä´æÆ÷
+			// å˜å€å¯„å­˜å™¨
 			address_data.data_type = mc_create_data_type(0xCC, 0x00, "Z*", 10);
 		}
 
@@ -173,17 +173,17 @@ melsec_mc_address_data mc_analysis_address(const char* address, int length)
 		const char* real_addr = address + 2;
 		if (address[1] == 'C' || address[1] == 'c')
 		{
-			// ¶¨Ê±Æ÷µÄÏßÈ¦
+			// å®šæ—¶å™¨çš„çº¿åœˆ
 			address_data.data_type = mc_create_data_type(0xC0, 0x01, "TC", 10);
 		}
 		else if (address[1] == 'S' || address[1] == 's')
 		{
-			// ¶¨Ê±Æ÷µÄ´¥µã
+			// å®šæ—¶å™¨çš„è§¦ç‚¹
 			address_data.data_type = mc_create_data_type(0xC1, 0x01, "TS", 10);
 		}
 		else if (address[1] == 'N' || address[1] == 'n')
 		{
-			// ¶¨Ê±Æ÷µÄµ±Ç°Öµ
+			// å®šæ—¶å™¨çš„å½“å‰å€¼
 			address_data.data_type = mc_create_data_type(0xC2, 0x01, "TN", 10);
 		}
 
@@ -196,17 +196,17 @@ melsec_mc_address_data mc_analysis_address(const char* address, int length)
 		const char* real_addr = address + 2;
 		if (address[1] == 'N' || address[1] == 'n')
 		{
-			// ¼ÆÊıÆ÷µÄµ±Ç°Öµ
+			// è®¡æ•°å™¨çš„å½“å‰å€¼
 			address_data.data_type = mc_create_data_type(0xC5, 0x01, "CN", 10);
 		}
 		else if (address[1] == 'S' || address[1] == 's')
 		{
-			//  ¼ÆÊıÆ÷µÄ´¥µã
+			//  è®¡æ•°å™¨çš„è§¦ç‚¹
 			address_data.data_type = mc_create_data_type(0xC4, 0x01, "CS", 10);
 		}
 		else if (address[1] == 'C' || address[1] == 'c')
 		{
-			// ¼ÆÊıÆ÷µÄÏßÈ¦
+			// è®¡æ•°å™¨çš„çº¿åœˆ
 			address_data.data_type = mc_create_data_type(0xC3, 0x01, "CC", 10);
 		}
 

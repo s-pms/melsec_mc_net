@@ -20,9 +20,9 @@ bool mc_remote_stop(int fd);
 bool mc_remote_reset(int fd);
 char* mc_read_plc_type(int fd);
 
-//½«MCĞ­ÒéµÄºËĞÄ±¨ÎÄ´ò°ü³ÉÒ»¸ö¿ÉÒÔÖ±½Ó¶ÔPLC½øĞĞ·¢ËÍµÄÔ­Ê¼±¨ÎÄ
+//å°†MCåè®®çš„æ ¸å¿ƒæŠ¥æ–‡æ‰“åŒ…æˆä¸€ä¸ªå¯ä»¥ç›´æ¥å¯¹PLCè¿›è¡Œå‘é€çš„åŸå§‹æŠ¥æ–‡
 byte_array_info pack_mc_command(byte_array_info* mc_core, byte network_number, byte station_number);
-//´ÓPLC·´À¡µÄÊı¾İÖĞÌáÈ¡³öÊµ¼ÊµÄÊı¾İÄÚÈİ£¬ĞèÒª´«Èë·´À¡Êı¾İ£¬ÊÇ·ñÎ»¶ÁÈ¡
+//ä»PLCåé¦ˆçš„æ•°æ®ä¸­æå–å‡ºå®é™…çš„æ•°æ®å†…å®¹ï¼Œéœ€è¦ä¼ å…¥åé¦ˆæ•°æ®ï¼Œæ˜¯å¦ä½è¯»å–
 void extract_actual_bool_data(byte_array_info* response);
 
 plc_network_address g_network_address;

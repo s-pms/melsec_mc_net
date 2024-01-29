@@ -52,7 +52,7 @@ bool read_bool_value(int fd, const char* address, int length, byte_array_info* o
 		{
 			byte temp[BUFFER_SIZE];
 			memset(temp, 0, BUFFER_SIZE);
-			byte_array_info response;
+			byte_array_info response = { 0 };
 			response.data = temp;
 			response.length = BUFFER_SIZE;
 
@@ -94,7 +94,7 @@ bool read_address_data(int fd, melsec_mc_address_data address_data, byte_array_i
 		{
 			byte temp[BUFFER_SIZE];
 			memset(temp, 0, BUFFER_SIZE);
-			byte_array_info response;
+			byte_array_info response = { 0 };
 			response.data = temp;
 			response.length = BUFFER_SIZE;
 
@@ -125,7 +125,7 @@ bool write_bool_value(int fd, const char* address, int length, bool_array_info i
 		{
 			byte temp[BUFFER_SIZE];
 			memset(temp, 0, BUFFER_SIZE);
-			byte_array_info response;
+			byte_array_info response = { 0 };
 			response.data = temp;
 			response.length = BUFFER_SIZE;
 
@@ -164,7 +164,7 @@ bool write_address_data(int fd, melsec_mc_address_data address_data, byte_array_
 		{
 			byte temp[BUFFER_SIZE];
 			memset(temp, 0, BUFFER_SIZE);
-			byte_array_info response;
+			byte_array_info response = { 0 };
 			response.data = temp;
 			response.length = BUFFER_SIZE;
 
@@ -189,7 +189,7 @@ bool mc_remote_run(int fd)
 	byte* core_cmd = (byte*)malloc(core_cmd_len);
 	memcpy(core_cmd, core_cmd_temp, core_cmd_len);
 
-	byte_array_info temp;
+	byte_array_info temp = { 0 };
 	temp.data = core_cmd;
 	temp.length = core_cmd_len;
 	byte_array_info  cmd = pack_mc_command(&temp, g_network_address.network_number, g_network_address.station_number);
@@ -201,7 +201,7 @@ bool mc_remote_run(int fd)
 		{
 			byte temp[BUFFER_SIZE];
 			memset(temp, 0, BUFFER_SIZE);
-			byte_array_info response;
+			byte_array_info response = { 0 };
 			response.data = temp;
 			response.length = BUFFER_SIZE;
 
@@ -227,7 +227,7 @@ bool mc_remote_stop(int fd)
 	byte* core_cmd = (byte*)malloc(core_cmd_len);
 	memcpy(core_cmd, core_cmd_temp, core_cmd_len);
 
-	byte_array_info temp;
+	byte_array_info temp = { 0 };
 	temp.data = core_cmd;
 	temp.length = core_cmd_len;
 	byte_array_info cmd = pack_mc_command(&temp, g_network_address.network_number, g_network_address.station_number);
@@ -239,7 +239,7 @@ bool mc_remote_stop(int fd)
 		{
 			byte temp[BUFFER_SIZE];
 			memset(temp, 0, BUFFER_SIZE);
-			byte_array_info response;
+			byte_array_info response = { 0 };
 			response.data = temp;
 			response.length = BUFFER_SIZE;
 
@@ -265,7 +265,7 @@ bool mc_remote_reset(int fd)
 	byte* core_cmd = (byte*)malloc(core_cmd_len);
 	memcpy(core_cmd, core_cmd_temp, core_cmd_len);
 
-	byte_array_info temp;
+	byte_array_info temp = { 0 };
 	temp.data = core_cmd;
 	temp.length = core_cmd_len;
 	byte_array_info cmd = pack_mc_command(&temp, g_network_address.network_number, g_network_address.station_number);
@@ -277,7 +277,7 @@ bool mc_remote_reset(int fd)
 		{
 			byte temp[BUFFER_SIZE];
 			memset(temp, 0, BUFFER_SIZE);
-			byte_array_info response;
+			byte_array_info response = { 0 };
 			response.data = temp;
 			response.length = BUFFER_SIZE;
 
@@ -305,7 +305,7 @@ char* mc_read_plc_type(int fd)
 	byte* core_cmd = (byte*)malloc(core_cmd_len);
 	memcpy(core_cmd, core_cmd_temp, core_cmd_len);
 
-	byte_array_info temp;
+	byte_array_info temp = { 0 };
 	temp.data = core_cmd;
 	temp.length = core_cmd_len;
 	byte_array_info cmd = pack_mc_command(&temp, g_network_address.network_number, g_network_address.station_number);
@@ -390,16 +390,12 @@ int mc_read_response(int fd, byte_array_info* response)
 {
 	int   nread = 0;
 	char* ptr = (char*)response->data;
-
 	if (fd < 0 || response->length <= 0) return -1;
-
 	nread = (int)recv(fd, ptr, response->length, 0);
-
 	if (nread < 0) {
 		return -1;
 	}
 	response->length = nread;
-
 	return nread;
 }
 

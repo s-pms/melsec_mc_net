@@ -4,18 +4,18 @@
 #include "typedef.h"
 
 typedef struct _tag_plc_network_address {
-	byte	network_number; // ÍøÂçºÅ£¬Í¨³£Îª0;ÒÀ¾İPLCµÄÅäÖÃ¶øÅäÖÃ
-	byte	station_number; // ÍøÂçÕ¾ºÅ£¬Í¨³£Îª0;ÒÀ¾İPLCµÄÅäÖÃ¶øÅäÖÃ
+	byte	network_number; // ç½‘ç»œå·ï¼Œé€šå¸¸ä¸º0;ä¾æ®PLCçš„é…ç½®è€Œé…ç½®
+	byte	station_number; // ç½‘ç»œç«™å·ï¼Œé€šå¸¸ä¸º0;ä¾æ®PLCçš„é…ç½®è€Œé…ç½®
 }plc_network_address;
 
 typedef struct _tag_byte_array_info {
-	byte* data;	// ÄÚÈİ
-	int length; // ³¤¶È
+	byte* data;	// å†…å®¹
+	int length; // é•¿åº¦
 }byte_array_info;
 
 typedef struct _tag_bool_array_info {
-	bool* data;	// ÄÚÈİ
-	int length; // ³¤¶È
+	bool* data;	// å†…å®¹
+	int length; // é•¿åº¦
 }bool_array_info;
 
 void short2bytes(short i, byte* bytes);

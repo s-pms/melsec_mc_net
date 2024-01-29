@@ -3,16 +3,16 @@
 #include "utill.h"
 
 typedef struct _tag_melsec_mc_data_type {
-	byte	data_code;	// ÀàĞÍµÄ´úºÅÖµ
-	byte	data_type;	// Êı¾İµÄÀàĞÍ£¬0´ú±í°´×Ö£¬1´ú±í°´Î»
-	char	ascii_code[10];	// µ±ÒÔASCII¸ñÊ½Í¨Ñ¶Ê±µÄÀàĞÍÃèÊö
-	int		from_base;	// Ö¸Ê¾µØÖ·ÊÇ10½øÖÆ£¬»¹ÊÇ16½øÖÆµÄ
+	byte	data_code;		// ç±»å‹çš„ä»£å·å€¼
+	byte	data_type;		// æ•°æ®çš„ç±»å‹ï¼Œ0ä»£è¡¨æŒ‰å­—ï¼Œ1ä»£è¡¨æŒ‰ä½
+	char	ascii_code[10];	// å½“ä»¥ASCIIæ ¼å¼é€šè®¯æ—¶çš„ç±»å‹æè¿°
+	int		from_base;		// æŒ‡ç¤ºåœ°å€æ˜¯10è¿›åˆ¶ï¼Œè¿˜æ˜¯16è¿›åˆ¶çš„
 }melse_mc_data_type;
 
 typedef struct _tag_melsec_mc_address_data {
-	melse_mc_data_type data_type;	// ÈıÁâµÄÊı¾İµØÖ·ĞÅÏ¢
-	int	address_start;				// Êı×ÖµÄÆğÊ¼µØÖ·£¬Ò²¾ÍÊÇÆ«ÒÆµØÖ·
-	int length;						// ¶ÁÈ¡µÄÊı¾İ³¤¶È
+	melse_mc_data_type data_type;	// ä¸‰è±çš„æ•°æ®åœ°å€ä¿¡æ¯
+	int	address_start;				// æ•°å­—çš„èµ·å§‹åœ°å€ï¼Œä¹Ÿå°±æ˜¯åç§»åœ°å€
+	int length;						// è¯»å–çš„æ•°æ®é•¿åº¦
 }melsec_mc_address_data;
 
 int mc_convert_string_to_int(const char* address, int frombase);
