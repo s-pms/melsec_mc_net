@@ -85,7 +85,7 @@ int mc_open_tcp_client_socket(char* destIp, short destPort) {
 	serverAddr.sin_addr.s_addr = inet_addr(destIp);
 	serverAddr.sin_port = (uint16_t)htons((uint16_t)destPort);
 
-	ret = connect(sockFd, (struct sockaddr*) & serverAddr, sizeof(serverAddr));
+	ret = connect(sockFd, (struct sockaddr*)&serverAddr, sizeof(serverAddr));
 
 	if (ret != 0) {
 		mc_close_tcp_socket(sockFd);

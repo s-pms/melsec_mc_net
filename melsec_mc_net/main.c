@@ -31,8 +31,6 @@
 
 #include "typedef.h"
 
-
-
 typedef bool (*pmc_mc_connect)(char* ip_addr, int port, byte network_addr, byte station_addr);
 typedef bool (*pmc_mc_disconnect)(int fd);
 
