@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "melsec_helper.h"
+#include "socket.h"
 
 // 从三菱地址，是否位读取进行创建读取的MC的核心报文
 // is_bit 是否进行了位读取操作
