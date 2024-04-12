@@ -63,7 +63,7 @@ mc_error_code_e read_bool_value(int fd, const char* address, int length, byte_ar
 
 	if (recv_size < MIN_RESPONSE_HEADER_SIZE) {
 		free(response.data);
-		return MC_ERROR_CODE_RESPONSE_HEADE_FAILED;
+		return MC_ERROR_CODE_RESPONSE_HEADER_FAILED;
 	}
 
 	ret = mc_parse_read_response(response, out_bytes);
@@ -109,7 +109,7 @@ mc_error_code_e read_address_data(int fd, melsec_mc_address_data address_data, b
 
 	if (recv_size < MIN_RESPONSE_HEADER_SIZE) {
 		free(response.data);
-		return MC_ERROR_CODE_RESPONSE_HEADE_FAILED;
+		return MC_ERROR_CODE_RESPONSE_HEADER_FAILED;
 	}
 
 	ret = mc_parse_read_response(response, out_bytes);
@@ -147,7 +147,7 @@ mc_error_code_e write_bool_value(int fd, const char* address, int length, bool_a
 
 	if (recv_size < MIN_RESPONSE_HEADER_SIZE) {
 		free(response.data);
-		return MC_ERROR_CODE_RESPONSE_HEADE_FAILED;
+		return MC_ERROR_CODE_RESPONSE_HEADER_FAILED;
 	}
 
 	ret = mc_parse_write_response(response, NULL);
@@ -188,7 +188,7 @@ mc_error_code_e write_address_data(int fd, melsec_mc_address_data address_data, 
 
 	if (recv_size < MIN_RESPONSE_HEADER_SIZE) {
 		free(response.data);
-		return MC_ERROR_CODE_RESPONSE_HEADE_FAILED;
+		return MC_ERROR_CODE_RESPONSE_HEADER_FAILED;
 	}
 
 	ret = mc_parse_write_response(response, NULL);
@@ -228,7 +228,7 @@ mc_error_code_e mc_remote_run(int fd)
 
 	if (recv_size < MIN_RESPONSE_HEADER_SIZE) {
 		free(response.data);
-		return MC_ERROR_CODE_RESPONSE_HEADE_FAILED;
+		return MC_ERROR_CODE_RESPONSE_HEADER_FAILED;
 	}
 
 	ret = mc_parse_read_response(response, NULL);
@@ -268,7 +268,7 @@ mc_error_code_e mc_remote_stop(int fd)
 
 	if (recv_size < MIN_RESPONSE_HEADER_SIZE) {
 		free(response.data);
-		return MC_ERROR_CODE_RESPONSE_HEADE_FAILED;
+		return MC_ERROR_CODE_RESPONSE_HEADER_FAILED;
 	}
 
 	ret = mc_parse_read_response(response, NULL);
@@ -309,7 +309,7 @@ mc_error_code_e mc_remote_reset(int fd)
 
 	if (recv_size < MIN_RESPONSE_HEADER_SIZE) {
 		free(response.data);
-		return MC_ERROR_CODE_RESPONSE_HEADE_FAILED;
+		return MC_ERROR_CODE_RESPONSE_HEADER_FAILED;
 	}
 
 	ret = mc_parse_read_response(response, NULL);
@@ -352,7 +352,7 @@ mc_error_code_e mc_read_plc_type(int fd, char** type)
 
 	if (recv_size < MIN_RESPONSE_HEADER_SIZE) {
 		free(response.data);
-		return MC_ERROR_CODE_RESPONSE_HEADE_FAILED;
+		return MC_ERROR_CODE_RESPONSE_HEADER_FAILED;
 	}
 
 	ret = mc_parse_read_response(response, &out_bytes);
