@@ -373,11 +373,11 @@ bool check_CRC(byte_array_info arr_data)
 	return ret;
 }
 
-bool mc_parse_read_response(byte_array_info response, byte_array_info* data)
+mc_error_code_e mc_parse_read_response(byte_array_info response, byte_array_info* data)
 {
-	bool ret = false;
+	mc_error_code_e ret = MC_ERROR_CODE_FAILED;
 	if (response.length == 0)
-		return ret;
+		return MC_ERROR_CODE_INVALID_PARAMETER;
 
 	int min = 11;
 	byte count[2];
@@ -389,7 +389,8 @@ bool mc_parse_read_response(byte_array_info response, byte_array_info* data)
 
 	uint16_t rsCount = count[0] * 256 + count[1] - 2;
 	uint16_t rsCode = code[0] * 256 + code[1];
-	ret = rsCode == 0 && rsCount == (response.length - min);
+	if (rsCode == 0 && rsCount == (response.length - min))
+		ret = MC_ERROR_CODE_SUCCESS;
 
 	if (rsCount > 0 && (data != NULL))
 	{
@@ -401,11 +402,11 @@ bool mc_parse_read_response(byte_array_info response, byte_array_info* data)
 	return ret;
 }
 
-bool mc_parse_write_response(byte_array_info response, byte_array_info* data)
+mc_error_code_e mc_parse_write_response(byte_array_info response, byte_array_info* data)
 {
-	bool ret = false;
+	mc_error_code_e ret = MC_ERROR_CODE_FAILED;
 	if (response.length == 0)
-		return ret;
+		return MC_ERROR_CODE_INVALID_PARAMETER;
 
 	int min = 11;
 	byte count[2];
@@ -417,15 +418,44 @@ bool mc_parse_write_response(byte_array_info response, byte_array_info* data)
 
 	uint16_t rsCount = count[0] * 256 + count[1] - 2;
 	uint16_t rsCode = code[0] * 256 + code[1];
-	ret = rsCode == 0 && rsCount == (response.length - min);
+	if (rsCode == 0 && rsCount == (response.length - min))
+		ret = MC_ERROR_CODE_SUCCESS;
 
 	//code 以后的内容返回
 	if (rsCount > 2 && (data != NULL))
 	{
 		data->data = (byte*)malloc(rsCount);
-		memset(data->data, 0, rsCount);
-		memcpy(data->data, response.data + 11, rsCount);
-		data->length = rsCount;
+		if (data->data == NULL)
+			ret = MC_ERROR_CODE_MALLOC_FAILED;
+		else
+		{
+			memset(data->data, 0, rsCount);
+			memcpy(data->data, response.data + 11, rsCount);
+			data->length = rsCount;
+		}
 	}
 	return ret;
+}
+
+bool mc_try_send_msg(int fd, byte_array_info* in_bytes)
+{
+	if (fd < -0 || in_bytes == NULL)
+		return false;
+
+	int retry_times = 0;
+	while (retry_times < MAX_RETRY_TIMES) {
+		int need_send = in_bytes->length;
+		int real_sends = mc_write_msg(fd, in_bytes->data, need_send);
+		if (real_sends == need_send) {
+			break;
+		}
+		// 处理发送失败的逻辑，例如重试或记录错误
+		retry_times++;
+	}
+
+	if (retry_times >= MAX_RETRY_TIMES) {
+		return false;
+	}
+
+	return true;
 }

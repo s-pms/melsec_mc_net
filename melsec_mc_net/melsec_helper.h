@@ -23,7 +23,9 @@ byte_array_info  calculate_CRC(byte_array_info  data);
 bool check_CRC(byte_array_info  data);
 
 //
-bool mc_parse_read_response(byte_array_info response, byte_array_info* data);
-bool mc_parse_write_response(byte_array_info response, byte_array_info* data);
+mc_error_code_e mc_parse_read_response(byte_array_info response, byte_array_info* data);
+mc_error_code_e mc_parse_write_response(byte_array_info response, byte_array_info* data);
+
+bool mc_try_send_msg(int fd, byte_array_info* in_bytes);
 
 #endif//__H_MELSC_HELPER_H__

@@ -2,6 +2,10 @@
 #define __H_MELSC_MC_COMM_H__
 #include "utill.h"
 
+#define BUFFER_SIZE 512
+#define MIN_RESPONSE_HEADER_SIZE 11		// 响应最小报头大小，替换魔术数字11
+#define MAX_RETRY_TIMES 3				// 最大重试次数
+
 typedef struct _tag_melsec_mc_data_type {
 	byte	data_code;		// 类型的代号值
 	byte	data_type;		// 数据的类型，0代表按字，1代表按位
@@ -17,6 +21,8 @@ typedef struct _tag_melsec_mc_address_data {
 
 int mc_convert_string_to_int(const char* address, int frombase);
 melse_mc_data_type mc_create_data_type(byte code, byte type, const char* ascii_code, int from_base);
-melsec_mc_address_data mc_analysis_address(const char* address, int length);
+bool mc_analysis_address(const char* address, int length, melsec_mc_address_data* out_address_data);
+
+
 
 #endif//__H_MELSC_MC_COMM_H__

@@ -19,8 +19,6 @@
 
 #define RELEASE_DATA(addr) { if(addr != NULL) { free(addr);} }
 
-#define BUFFER_SIZE 512
-
 int mc_connect(char* ip_addr, int port, byte network_addr, byte station_addr)
 {
 	int fd = -1;
@@ -38,265 +36,291 @@ bool mc_disconnect(int fd)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool read_bool_value(int fd, const char* address, int length, byte_array_info* out_bytes)
+mc_error_code_e read_bool_value(int fd, const char* address, int length, byte_array_info* out_bytes)
 {
-	bool ret = false;
-	melsec_mc_address_data address_data = mc_analysis_address(address, length);
-	byte_array_info core_cmd = build_read_core_command(address_data, true);
-	if (core_cmd.data != NULL)
-	{
-		byte_array_info cmd = pack_mc_command(&core_cmd, g_network_address.network_number, g_network_address.station_number);
-		int need_send = cmd.length;
-		int real_sends = mc_write_msg(fd, cmd.data, need_send);
-		if (real_sends == need_send)
-		{
-			byte temp[BUFFER_SIZE];
-			memset(temp, 0, BUFFER_SIZE);
-			byte_array_info response = { 0 };
-			response.data = temp;
-			response.length = BUFFER_SIZE;
+	mc_error_code_e ret = MC_ERROR_CODE_FAILED;
+	melsec_mc_address_data address_data;
+	if (!mc_analysis_address(address, length, &address_data))
+		return MC_ERROR_CODE_PARSE_ADDRESS_FAILED;
 
-			int recv_size = mc_read_response(fd, &response);
-			int min = 11;
-			if (recv_size >= min) //header size
-			{
-				ret = mc_parse_read_response(response, out_bytes);
-				if (ret)
-					extract_actual_bool_data(out_bytes);
-			}
-		}
-		free(cmd.data);
+	byte_array_info core_cmd = build_read_core_command(address_data, true);
+	if (core_cmd.data == NULL)
+		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
+
+	byte_array_info cmd = pack_mc_command(&core_cmd, g_network_address.network_number, g_network_address.station_number);
+	free(core_cmd.data);
+
+	if (!mc_try_send_msg(fd, &cmd))
+		return MC_ERROR_CODE_SOCKET_SEND_FAILED;
+
+	byte_array_info response = { 0 };
+	int recv_size = 0;
+	ret = mc_read_response(fd, &response, &recv_size);
+	if (ret != MC_ERROR_CODE_SUCCESS) {
+		RELEASE_DATA(response.data);
+		return ret;
 	}
+
+	if (recv_size < MIN_RESPONSE_HEADER_SIZE) {
+		free(response.data);
+		return MC_ERROR_CODE_RESPONSE_HEADE_FAILED;
+	}
+
+	ret = mc_parse_read_response(response, out_bytes);
+	if (ret == MC_ERROR_CODE_SUCCESS) {
+		extract_actual_bool_data(out_bytes);
+	}
+
+	RELEASE_DATA(response.data);
 	return ret;
 }
 
-bool read_word_value(int fd, const char* address, int length, byte_array_info* out_bytes)
+mc_error_code_e read_word_value(int fd, const char* address, int length, byte_array_info* out_bytes)
 {
-	melsec_mc_address_data address_data = mc_analysis_address(address, length);
+	melsec_mc_address_data address_data;
+	if (!mc_analysis_address(address, length, &address_data))
+		return MC_ERROR_CODE_PARSE_ADDRESS_FAILED;
+
 	ushort already_finished = 0;
-	bool isok = false;
-	isok = read_address_data(fd, address_data, out_bytes);
-	if (!isok)
-		return isok;
-	return true;
+	return read_address_data(fd, address_data, out_bytes);
 }
 
-bool read_address_data(int fd, melsec_mc_address_data address_data, byte_array_info* out_bytes)
+mc_error_code_e read_address_data(int fd, melsec_mc_address_data address_data, byte_array_info* out_bytes)
 {
-	bool ret = false;
+	mc_error_code_e ret = MC_ERROR_CODE_FAILED;
 	byte_array_info core_cmd = build_read_core_command(address_data, false);
-	if (core_cmd.data != NULL)
-	{
-		byte_array_info cmd = pack_mc_command(&core_cmd, g_network_address.network_number, g_network_address.station_number);
-		int need_send = cmd.length;
-		int real_sends = mc_write_msg(fd, cmd.data, need_send);
-		if (real_sends == need_send)
-		{
-			byte temp[BUFFER_SIZE];
-			memset(temp, 0, BUFFER_SIZE);
-			byte_array_info response = { 0 };
-			response.data = temp;
-			response.length = BUFFER_SIZE;
+	if (core_cmd.data == NULL)
+		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
 
-			int recv_size = mc_read_response(fd, &response);
-			int min = 11;
-			if (recv_size >= min) //header size
-			{
-				ret = mc_parse_read_response(response, out_bytes);
-			}
-		}
-		free(cmd.data);
+	byte_array_info cmd = pack_mc_command(&core_cmd, g_network_address.network_number, g_network_address.station_number);
+	free(core_cmd.data);
+
+	if (!mc_try_send_msg(fd, &cmd))
+		return MC_ERROR_CODE_SOCKET_SEND_FAILED;
+
+	byte_array_info response = { 0 };
+	int recv_size = 0;
+	ret = mc_read_response(fd, &response, &recv_size);
+	if (ret != MC_ERROR_CODE_SUCCESS)
+	{
+		RELEASE_DATA(response.data);
+		return ret;
 	}
+
+	if (recv_size < MIN_RESPONSE_HEADER_SIZE) {
+		free(response.data);
+		return MC_ERROR_CODE_RESPONSE_HEADE_FAILED;
+	}
+
+	ret = mc_parse_read_response(response, out_bytes);
+	RELEASE_DATA(response.data);
+
 	return ret;
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool write_bool_value(int fd, const char* address, int length, bool_array_info in_bytes)
+mc_error_code_e write_bool_value(int fd, const char* address, int length, bool_array_info in_bytes)
 {
-	melsec_mc_address_data address_data = mc_analysis_address(address, length);
-	bool isok = false;
+	mc_error_code_e ret = MC_ERROR_CODE_FAILED;
+	melsec_mc_address_data address_data;
+	if (!mc_analysis_address(address, length, &address_data))
+		return MC_ERROR_CODE_PARSE_ADDRESS_FAILED;
+
 	byte_array_info core_cmd = build_write_bit_core_command(address_data, in_bytes);
-	if (core_cmd.data != NULL)
+	if (core_cmd.data == NULL)
+		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
+
+	byte_array_info cmd = pack_mc_command(&core_cmd, g_network_address.network_number, g_network_address.station_number);
+	free(core_cmd.data);
+
+	if (!mc_try_send_msg(fd, &cmd))
+		return MC_ERROR_CODE_SOCKET_SEND_FAILED;
+
+	byte_array_info response = { 0 };
+	int recv_size = 0;
+	ret = mc_read_response(fd, &response, &recv_size);
+	if (ret != MC_ERROR_CODE_SUCCESS)
 	{
-		byte_array_info cmd = pack_mc_command(&core_cmd, g_network_address.network_number, g_network_address.station_number);
-		int need_send = cmd.length;
-		int real_sends = mc_write_msg(fd, cmd.data, need_send);
-		if (real_sends == need_send)
-		{
-			byte temp[BUFFER_SIZE];
-			memset(temp, 0, BUFFER_SIZE);
-			byte_array_info response = { 0 };
-			response.data = temp;
-			response.length = BUFFER_SIZE;
-
-			int recv_size = mc_read_response(fd, &response);
-			int min = 11;
-			if (recv_size >= min) //header size
-			{
-				isok = mc_parse_write_response(response, NULL);
-			}
-		}
-		free(cmd.data);
+		RELEASE_DATA(response.data);
+		return ret;
 	}
-	return isok;
-}
 
-bool write_word_value(int fd, const char* address, int length, byte_array_info in_bytes)
-{
-	melsec_mc_address_data address_data = mc_analysis_address(address, length);
-	bool isok = false;
-	isok = write_address_data(fd, address_data, in_bytes);
-	if (!isok)
-		return isok;
-	return true;
-}
-
-bool write_address_data(int fd, melsec_mc_address_data address_data, byte_array_info in_bytes)
-{
-	bool ret = false;
-	byte_array_info core_cmd = build_write_word_core_command(address_data, in_bytes);
-	if (core_cmd.data != NULL)
-	{
-		byte_array_info cmd = pack_mc_command(&core_cmd, g_network_address.network_number, g_network_address.station_number);
-		int need_send = cmd.length;
-		int real_sends = mc_write_msg(fd, cmd.data, need_send);
-		if (real_sends == need_send)
-		{
-			byte temp[BUFFER_SIZE];
-			memset(temp, 0, BUFFER_SIZE);
-			byte_array_info response = { 0 };
-			response.data = temp;
-			response.length = BUFFER_SIZE;
-
-			int recv_size = mc_read_response(fd, &response);
-			int min = 11;
-			if (recv_size >= min) //header size
-			{
-				ret = mc_parse_write_response(response, NULL);
-			}
-		}
-		free(cmd.data);
+	if (recv_size < MIN_RESPONSE_HEADER_SIZE) {
+		free(response.data);
+		return MC_ERROR_CODE_RESPONSE_HEADE_FAILED;
 	}
+
+	ret = mc_parse_write_response(response, NULL);
+	RELEASE_DATA(response.data);
 	return ret;
 }
 
-bool mc_remote_run(int fd)
+mc_error_code_e write_word_value(int fd, const char* address, int length, byte_array_info in_bytes)
 {
-	bool ret = false;
+	melsec_mc_address_data address_data;
+	if (!mc_analysis_address(address, length, &address_data))
+		return MC_ERROR_CODE_PARSE_ADDRESS_FAILED;
+
+	return write_address_data(fd, address_data, in_bytes);
+}
+
+mc_error_code_e write_address_data(int fd, melsec_mc_address_data address_data, byte_array_info in_bytes)
+{
+	mc_error_code_e ret = MC_ERROR_CODE_FAILED;
+	byte_array_info core_cmd = build_write_word_core_command(address_data, in_bytes);
+	if (core_cmd.data == NULL)
+		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
+
+	byte_array_info cmd = pack_mc_command(&core_cmd, g_network_address.network_number, g_network_address.station_number);
+	free(core_cmd.data);
+
+	if (!mc_try_send_msg(fd, &cmd))
+		return MC_ERROR_CODE_SOCKET_SEND_FAILED;
+
+	byte_array_info response = { 0 };
+	int recv_size = 0;
+	ret = mc_read_response(fd, &response, &recv_size);
+	if (ret != MC_ERROR_CODE_SUCCESS)
+	{
+		RELEASE_DATA(response.data);
+		return ret;
+	}
+
+	if (recv_size < MIN_RESPONSE_HEADER_SIZE) {
+		free(response.data);
+		return MC_ERROR_CODE_RESPONSE_HEADE_FAILED;
+	}
+
+	ret = mc_parse_write_response(response, NULL);
+	RELEASE_DATA(response.data);
+	return ret;
+}
+
+mc_error_code_e mc_remote_run(int fd)
+{
+	mc_error_code_e ret = MC_ERROR_CODE_FAILED;
 	byte core_cmd_temp[] = { 0x01, 0x10, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 };
 
 	int core_cmd_len = sizeof(core_cmd_temp) / sizeof(core_cmd_temp[0]);
 	byte* core_cmd = (byte*)malloc(core_cmd_len);
 	memcpy(core_cmd, core_cmd_temp, core_cmd_len);
 
-	byte_array_info temp = { 0 };
-	temp.data = core_cmd;
-	temp.length = core_cmd_len;
-	byte_array_info  cmd = pack_mc_command(&temp, g_network_address.network_number, g_network_address.station_number);
-	if (cmd.data != NULL)
-	{
-		int need_send = cmd.length;
-		int real_sends = mc_write_msg(fd, cmd.data, need_send);
-		if (real_sends == need_send)
-		{
-			byte temp[BUFFER_SIZE];
-			memset(temp, 0, BUFFER_SIZE);
-			byte_array_info response = { 0 };
-			response.data = temp;
-			response.length = BUFFER_SIZE;
+	byte_array_info temp_info = { 0 };
+	temp_info.data = core_cmd;
+	temp_info.length = core_cmd_len;
+	byte_array_info  cmd = pack_mc_command(&temp_info, g_network_address.network_number, g_network_address.station_number);
+	free(core_cmd);
 
-			int recv_size = mc_read_response(fd, &response);
-			int min = 11;
-			if (recv_size >= min) //header size
-			{
-				ret = mc_parse_read_response(response, NULL);
-			}
-		}
-		free(cmd.data);
+	if (cmd.data == NULL)
+		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
+
+	if (!mc_try_send_msg(fd, &cmd))
+		return MC_ERROR_CODE_SOCKET_SEND_FAILED;
+
+	byte_array_info response = { 0 };
+	int recv_size = 0;
+	ret = mc_read_response(fd, &response, &recv_size);
+	if (ret != MC_ERROR_CODE_SUCCESS)
+	{
+		RELEASE_DATA(response.data);
+		return ret;
 	}
+
+	if (recv_size < MIN_RESPONSE_HEADER_SIZE) {
+		free(response.data);
+		return MC_ERROR_CODE_RESPONSE_HEADE_FAILED;
+	}
+
+	ret = mc_parse_read_response(response, NULL);
+	RELEASE_DATA(response.data);
 
 	return ret;
 }
 
-bool mc_remote_stop(int fd)
+mc_error_code_e mc_remote_stop(int fd)
 {
-	bool ret = false;
+	mc_error_code_e ret = MC_ERROR_CODE_FAILED;
 	byte core_cmd_temp[] = { 0x02, 0x10, 0x00, 0x00, 0x01, 0x00 };
 
 	int core_cmd_len = sizeof(core_cmd_temp) / sizeof(core_cmd_temp[0]);
 	byte* core_cmd = (byte*)malloc(core_cmd_len);
 	memcpy(core_cmd, core_cmd_temp, core_cmd_len);
 
-	byte_array_info temp = { 0 };
-	temp.data = core_cmd;
-	temp.length = core_cmd_len;
-	byte_array_info cmd = pack_mc_command(&temp, g_network_address.network_number, g_network_address.station_number);
-	if (cmd.data != NULL)
-	{
-		int need_send = cmd.length;
-		int real_sends = mc_write_msg(fd, cmd.data, need_send);
-		if (real_sends == need_send)
-		{
-			byte temp[BUFFER_SIZE];
-			memset(temp, 0, BUFFER_SIZE);
-			byte_array_info response = { 0 };
-			response.data = temp;
-			response.length = BUFFER_SIZE;
+	byte_array_info temp_info = { 0 };
+	temp_info.data = core_cmd;
+	temp_info.length = core_cmd_len;
+	byte_array_info  cmd = pack_mc_command(&temp_info, g_network_address.network_number, g_network_address.station_number);
+	free(core_cmd);
+	if (cmd.data == NULL)
+		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
 
-			int recv_size = mc_read_response(fd, &response);
-			int min = 11;
-			if (recv_size >= min) //header size
-			{
-				ret = mc_parse_read_response(response, NULL);
-			}
-		}
-		free(cmd.data);
+	if (!mc_try_send_msg(fd, &cmd))
+		return MC_ERROR_CODE_SOCKET_SEND_FAILED;
+
+	byte_array_info response = { 0 };
+	int recv_size = 0;
+	ret = mc_read_response(fd, &response, &recv_size);
+	if (ret != MC_ERROR_CODE_SUCCESS)
+	{
+		RELEASE_DATA(response.data);
+		return ret;
 	}
+
+	if (recv_size < MIN_RESPONSE_HEADER_SIZE) {
+		free(response.data);
+		return MC_ERROR_CODE_RESPONSE_HEADE_FAILED;
+	}
+
+	ret = mc_parse_read_response(response, NULL);
+	RELEASE_DATA(response.data);
 
 	return ret;
 }
 
-bool mc_remote_reset(int fd)
+mc_error_code_e mc_remote_reset(int fd)
 {
-	bool ret = false;
+	mc_error_code_e ret = MC_ERROR_CODE_FAILED;
 	byte core_cmd_temp[] = { 0x06, 0x10, 0x00, 0x00, 0x01, 0x00 };
 
 	int core_cmd_len = sizeof(core_cmd_temp) / sizeof(core_cmd_temp[0]);
 	byte* core_cmd = (byte*)malloc(core_cmd_len);
 	memcpy(core_cmd, core_cmd_temp, core_cmd_len);
 
-	byte_array_info temp = { 0 };
-	temp.data = core_cmd;
-	temp.length = core_cmd_len;
-	byte_array_info cmd = pack_mc_command(&temp, g_network_address.network_number, g_network_address.station_number);
-	if (cmd.data != NULL)
-	{
-		int need_send = cmd.length;
-		int real_sends = mc_write_msg(fd, cmd.data, need_send);
-		if (real_sends == need_send)
-		{
-			byte temp[BUFFER_SIZE];
-			memset(temp, 0, BUFFER_SIZE);
-			byte_array_info response = { 0 };
-			response.data = temp;
-			response.length = BUFFER_SIZE;
+	byte_array_info temp_info = { 0 };
+	temp_info.data = core_cmd;
+	temp_info.length = core_cmd_len;
+	byte_array_info  cmd = pack_mc_command(&temp_info, g_network_address.network_number, g_network_address.station_number);
+	free(core_cmd);
 
-			int recv_size = mc_read_response(fd, &response);
-			int min = 11;
-			if (recv_size >= min) //header size
-			{
-				ret = mc_parse_read_response(response, NULL);
-			}
-		}
-		free(cmd.data);
+	if (cmd.data == NULL)
+		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
+
+	if (!mc_try_send_msg(fd, &cmd))
+		return MC_ERROR_CODE_SOCKET_SEND_FAILED;
+
+	byte_array_info response = { 0 };
+	int recv_size = 0;
+	ret = mc_read_response(fd, &response, &recv_size);
+	if (ret != MC_ERROR_CODE_SUCCESS)
+	{
+		RELEASE_DATA(response.data);
+		return ret;
 	}
+
+	if (recv_size < MIN_RESPONSE_HEADER_SIZE) {
+		free(response.data);
+		return MC_ERROR_CODE_RESPONSE_HEADE_FAILED;
+	}
+
+	ret = mc_parse_read_response(response, NULL);
+	RELEASE_DATA(response.data);
 
 	return ret;
 }
 
-char* mc_read_plc_type(int fd)
+mc_error_code_e mc_read_plc_type(int fd, char** type)
 {
-	bool is_ok = false;
+	mc_error_code_e ret = MC_ERROR_CODE_FAILED;
 	byte_array_info out_bytes;
 	memset(&out_bytes, 0, sizeof(out_bytes));
 
@@ -305,37 +329,39 @@ char* mc_read_plc_type(int fd)
 	byte* core_cmd = (byte*)malloc(core_cmd_len);
 	memcpy(core_cmd, core_cmd_temp, core_cmd_len);
 
-	byte_array_info temp = { 0 };
-	temp.data = core_cmd;
-	temp.length = core_cmd_len;
-	byte_array_info cmd = pack_mc_command(&temp, g_network_address.network_number, g_network_address.station_number);
-	if (cmd.data != NULL)
-	{
-		int need_send = cmd.length;
-		int real_sends = mc_write_msg(fd, cmd.data, need_send);
-		if (real_sends == need_send)
-		{
-			byte temp[BUFFER_SIZE];
-			memset(temp, 0, BUFFER_SIZE);
-			byte_array_info response;
-			response.data = temp;
-			response.length = BUFFER_SIZE;
+	byte_array_info temp_info = { 0 };
+	temp_info.data = core_cmd;
+	temp_info.length = core_cmd_len;
+	byte_array_info  cmd = pack_mc_command(&temp_info, g_network_address.network_number, g_network_address.station_number);
+	free(core_cmd);
 
-			int recv_size = mc_read_response(fd, &response);
-			int min = 11;
-			if (recv_size >= min) //header size
-			{
-				is_ok = mc_parse_read_response(response, &out_bytes);
-			}
-		}
-		free(cmd.data);
+	if (cmd.data == NULL)
+		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
+
+	if (!mc_try_send_msg(fd, &cmd))
+		return MC_ERROR_CODE_SOCKET_SEND_FAILED;
+
+	byte_array_info response = { 0 };
+	int recv_size = 0;
+	ret = mc_read_response(fd, &response, &recv_size);
+	if (ret != MC_ERROR_CODE_SUCCESS)
+	{
+		RELEASE_DATA(response.data);
+		return ret;
 	}
 
-	if (is_ok && out_bytes.length > 0)
-	{
-		return (char*)out_bytes.data;
+	if (recv_size < MIN_RESPONSE_HEADER_SIZE) {
+		free(response.data);
+		return MC_ERROR_CODE_RESPONSE_HEADE_FAILED;
 	}
-	return NULL;
+
+	ret = mc_parse_read_response(response, &out_bytes);
+	RELEASE_DATA(response.data);
+
+	if (ret == MC_ERROR_CODE_SUCCESS && out_bytes.length > 0)
+		*type = (char*)out_bytes.data;
+
+	return ret;
 }
 
 byte_array_info pack_mc_command(byte_array_info* mc_core, byte network_number, byte station_number)
@@ -361,7 +387,6 @@ byte_array_info pack_mc_command(byte_array_info* mc_core, byte network_number, b
 	byte_array_info ret;
 	ret.data = command;
 	ret.length = cmd_len;
-	free(mc_core->data);
 
 	return ret;
 }
@@ -386,28 +411,42 @@ void extract_actual_bool_data(byte_array_info* response)
 	response->length = resp_len;
 }
 
-int mc_read_response(int fd, byte_array_info* response)
+mc_error_code_e mc_read_response(int fd, byte_array_info* response, int* read_count)
 {
-	int   nread = 0;
+	if (fd < 0 || read_count == 0 || response == NULL)
+		return MC_ERROR_CODE_INVALID_PARAMETER;
+
+	byte* temp = malloc(BUFFER_SIZE); // ¶¯Ì¬·ÖÅä»º³åÇø
+	if (temp == NULL)
+		return MC_ERROR_CODE_MALLOC_FAILED;
+
+	memset(temp, 0, BUFFER_SIZE);
+	response->data = temp;
+	response->length = BUFFER_SIZE;
+
+	*read_count = 0;
 	char* ptr = (char*)response->data;
 	if (fd < 0 || response->length <= 0) return -1;
-	nread = (int)recv(fd, ptr, response->length, 0);
-	if (nread < 0) {
-		return -1;
+	*read_count = (int)recv(fd, ptr, response->length, 0);
+	if (*read_count < 0) {
+		return MC_ERROR_CODE_FAILED;
 	}
-	response->length = nread;
-	return nread;
+	response->length = *read_count;
+	return MC_ERROR_CODE_SUCCESS;
 }
 
 //////////////////////////////////////////////////////////////////////////
 
-bool mc_read_bool(int fd, const char* address, bool* val)
+mc_error_code_e mc_read_bool(int fd, const char* address, bool* val)
 {
-	bool ret = false;
+	if (fd <= 0 || address == NULL || val == NULL)
+		return MC_ERROR_CODE_INVALID_PARAMETER;
+
+	mc_error_code_e ret = MC_ERROR_CODE_FAILED;
 	byte_array_info read_data;
 	memset(&read_data, 0, sizeof(read_data));
 	ret = read_bool_value(fd, address, 1, &read_data);
-	if (ret && read_data.length > 0)
+	if (ret == MC_ERROR_CODE_SUCCESS && read_data.length > 0)
 	{
 		*val = (bool)read_data.data[0];
 		RELEASE_DATA(read_data.data);
@@ -415,13 +454,16 @@ bool mc_read_bool(int fd, const char* address, bool* val)
 	return ret;
 }
 
-bool mc_read_short(int fd, const char* address, short* val)
+mc_error_code_e mc_read_short(int fd, const char* address, short* val)
 {
-	bool ret = false;
+	if (fd <= 0 || address == NULL || val == NULL)
+		return MC_ERROR_CODE_INVALID_PARAMETER;
+
+	mc_error_code_e ret = MC_ERROR_CODE_FAILED;
 	byte_array_info read_data;
 	memset(&read_data, 0, sizeof(read_data));
 	ret = read_word_value(fd, address, 1, &read_data);
-	if (ret && read_data.length > 0)
+	if (ret == MC_ERROR_CODE_SUCCESS && read_data.length > 0)
 	{
 		*val = bytes2short(read_data.data);
 		RELEASE_DATA(read_data.data);
@@ -429,13 +471,16 @@ bool mc_read_short(int fd, const char* address, short* val)
 	return ret;
 }
 
-bool mc_read_ushort(int fd, const char* address, ushort* val)
+mc_error_code_e mc_read_ushort(int fd, const char* address, ushort* val)
 {
-	bool ret = false;
+	if (fd <= 0 || address == NULL || val == NULL)
+		return MC_ERROR_CODE_INVALID_PARAMETER;
+
+	mc_error_code_e ret = MC_ERROR_CODE_FAILED;
 	byte_array_info read_data;
 	memset(&read_data, 0, sizeof(read_data));
 	ret = read_word_value(fd, address, 1, &read_data);
-	if (ret && read_data.length >= 2)
+	if (ret == MC_ERROR_CODE_SUCCESS && read_data.length >= 2)
 	{
 		*val = bytes2ushort(read_data.data);
 		RELEASE_DATA(read_data.data);
@@ -443,13 +488,16 @@ bool mc_read_ushort(int fd, const char* address, ushort* val)
 	return ret;
 }
 
-bool mc_read_int32(int fd, const char* address, int32* val)
+mc_error_code_e mc_read_int32(int fd, const char* address, int32* val)
 {
-	bool ret = false;
+	if (fd <= 0 || address == NULL || val == NULL)
+		return MC_ERROR_CODE_INVALID_PARAMETER;
+
+	mc_error_code_e ret = MC_ERROR_CODE_FAILED;
 	byte_array_info read_data;
 	memset(&read_data, 0, sizeof(read_data));
 	ret = read_word_value(fd, address, 2, &read_data);
-	if (ret && read_data.length >= 4)
+	if (ret == MC_ERROR_CODE_SUCCESS && read_data.length >= 4)
 	{
 		*val = bytes2int32(read_data.data);
 		RELEASE_DATA(read_data.data);
@@ -457,13 +505,16 @@ bool mc_read_int32(int fd, const char* address, int32* val)
 	return ret;
 }
 
-bool mc_read_uint32(int fd, const char* address, uint32* val)
+mc_error_code_e mc_read_uint32(int fd, const char* address, uint32* val)
 {
-	bool ret = false;
+	if (fd <= 0 || address == NULL || val == NULL)
+		return MC_ERROR_CODE_INVALID_PARAMETER;
+
+	mc_error_code_e ret = MC_ERROR_CODE_FAILED;
 	byte_array_info read_data;
 	memset(&read_data, 0, sizeof(read_data));
 	ret = read_word_value(fd, address, 2, &read_data);
-	if (ret && read_data.length >= 2)
+	if (ret == MC_ERROR_CODE_SUCCESS && read_data.length >= 2)
 	{
 		*val = bytes2uint32(read_data.data);
 		RELEASE_DATA(read_data.data);
@@ -471,13 +522,16 @@ bool mc_read_uint32(int fd, const char* address, uint32* val)
 	return ret;
 }
 
-bool mc_read_int64(int fd, const char* address, int64* val)
+mc_error_code_e mc_read_int64(int fd, const char* address, int64* val)
 {
-	bool ret = false;
+	if (fd <= 0 || address == NULL || val == NULL)
+		return MC_ERROR_CODE_INVALID_PARAMETER;
+
+	mc_error_code_e ret = MC_ERROR_CODE_FAILED;
 	byte_array_info read_data;
 	memset(&read_data, 0, sizeof(read_data));
 	ret = read_word_value(fd, address, 4, &read_data);
-	if (ret && read_data.length >= 8)
+	if (ret == MC_ERROR_CODE_SUCCESS && read_data.length >= 8)
 	{
 		*val = bytes2bigInt(read_data.data);
 		RELEASE_DATA(read_data.data);
@@ -485,13 +539,16 @@ bool mc_read_int64(int fd, const char* address, int64* val)
 	return ret;
 }
 
-bool mc_read_uint64(int fd, const char* address, uint64* val)
+mc_error_code_e mc_read_uint64(int fd, const char* address, uint64* val)
 {
-	bool ret = false;
+	if (fd <= 0 || address == NULL || val == NULL)
+		return MC_ERROR_CODE_INVALID_PARAMETER;
+
+	mc_error_code_e ret = MC_ERROR_CODE_FAILED;
 	byte_array_info read_data;
 	memset(&read_data, 0, sizeof(read_data));
 	ret = read_word_value(fd, address, 4, &read_data);
-	if (ret && read_data.length >= 8)
+	if (ret == MC_ERROR_CODE_SUCCESS && read_data.length >= 8)
 	{
 		*val = bytes2ubigInt(read_data.data);
 		RELEASE_DATA(read_data.data);
@@ -499,13 +556,16 @@ bool mc_read_uint64(int fd, const char* address, uint64* val)
 	return ret;
 }
 
-bool mc_read_float(int fd, const char* address, float* val)
+mc_error_code_e mc_read_float(int fd, const char* address, float* val)
 {
-	bool ret = false;
+	if (fd <= 0 || address == NULL || val == NULL)
+		return MC_ERROR_CODE_INVALID_PARAMETER;
+
+	mc_error_code_e ret = MC_ERROR_CODE_FAILED;
 	byte_array_info read_data;
 	memset(&read_data, 0, sizeof(read_data));
 	ret = read_word_value(fd, address, 2, &read_data);
-	if (ret && read_data.length >= 4)
+	if (ret == MC_ERROR_CODE_SUCCESS && read_data.length >= 4)
 	{
 		*val = bytes2float(read_data.data);
 		RELEASE_DATA(read_data.data);
@@ -513,13 +573,16 @@ bool mc_read_float(int fd, const char* address, float* val)
 	return ret;
 }
 
-bool mc_read_double(int fd, const char* address, double* val)
+mc_error_code_e mc_read_double(int fd, const char* address, double* val)
 {
-	bool ret = false;
+	if (fd <= 0 || address == NULL || val == NULL)
+		return MC_ERROR_CODE_INVALID_PARAMETER;
+
+	mc_error_code_e ret = MC_ERROR_CODE_FAILED;
 	byte_array_info read_data;
 	memset(&read_data, 0, sizeof(read_data));
 	ret = read_word_value(fd, address, 4, &read_data);
-	if (ret && read_data.length >= 8)
+	if (ret == MC_ERROR_CODE_SUCCESS && read_data.length >= 8)
 	{
 		*val = bytes2double(read_data.data);
 		RELEASE_DATA(read_data.data);
@@ -527,193 +590,183 @@ bool mc_read_double(int fd, const char* address, double* val)
 	return ret;
 }
 
-bool mc_read_string(int fd, const char* address, int length, char** val)
+mc_error_code_e mc_read_string(int fd, const char* address, int length, char** val)
 {
-	bool ret = false;
-	if (length > 0)
+	if (fd <= 0 || address == NULL || length <= 0)
+		return MC_ERROR_CODE_INVALID_PARAMETER;
+
+	mc_error_code_e ret = MC_ERROR_CODE_FAILED;
+	byte_array_info read_data;
+	memset(&read_data, 0, sizeof(read_data));
+	int read_len = (length % 2) == 1 ? length + 1 : length;
+	ret = read_word_value(fd, address, length / 2, &read_data);
+	if (ret == MC_ERROR_CODE_SUCCESS && read_data.length >= read_len)
 	{
-		byte_array_info read_data;
-		memset(&read_data, 0, sizeof(read_data));
-		int read_len = (length % 2) == 1 ? length + 1 : length;
-		ret = read_word_value(fd, address, length / 2, &read_data);
-		if (ret && read_data.length >= read_len)
+		char* ret_str = (char*)malloc(read_len);
+		if (ret_str != NULL)
 		{
-			char* ret_str = (char*)malloc(read_len);
 			memset(ret_str, 0, read_len);
 			memcpy(ret_str, read_data.data, read_len);
 			RELEASE_DATA(read_data.data);
 			*val = ret_str;
 		}
+		else
+			ret = MC_ERROR_CODE_MALLOC_FAILED;
 	}
 	return ret;
 }
 
-bool mc_write_bool(int fd, const char* address, bool val)
+mc_error_code_e mc_write_bool(int fd, const char* address, bool val)
 {
-	bool ret = false;
-	if (fd > 0 && address != NULL)
-	{
-		int write_len = 1;
-		bool_array_info write_data;
-		bool* data = (bool*)malloc(write_len);
-		data[0] = val;
+	if (fd <= 0 || address == NULL)
+		return MC_ERROR_CODE_INVALID_PARAMETER;
 
-		write_data.data = data;
-		write_data.length = write_len;
-		ret = write_bool_value(fd, address, 1, write_data);
-	}
-	return ret;
+	int write_len = 1;
+	bool_array_info write_data;
+	bool* data = (bool*)malloc(write_len);
+	if (data == NULL)
+		return MC_ERROR_CODE_MALLOC_FAILED;
+
+	data[0] = val;
+
+	write_data.data = data;
+	write_data.length = write_len;
+	return write_bool_value(fd, address, 1, write_data);
 }
 
-bool mc_write_short(int fd, const char* address, short val)
+mc_error_code_e mc_write_short(int fd, const char* address, short val)
 {
-	bool ret = false;
-	if (fd > 0 && address != NULL)
-	{
-		int write_len = 2;
-		byte_array_info write_data;
-		memset(&write_data, 0, sizeof(write_data));
-		write_data.data = (byte*)malloc(write_len);
-		write_data.length = write_len;
+	if (fd <= 0 || address == NULL)
+		return MC_ERROR_CODE_INVALID_PARAMETER;
 
-		short2bytes(val, write_data.data);
-		ret = write_word_value(fd, address, 1, write_data);
-	}
-	return ret;
+	int write_len = 2;
+	byte_array_info write_data;
+	memset(&write_data, 0, sizeof(write_data));
+	write_data.data = (byte*)malloc(write_len);
+	write_data.length = write_len;
+
+	short2bytes(val, write_data.data);
+	return write_word_value(fd, address, 1, write_data);
 }
 
-bool mc_write_ushort(int fd, const char* address, ushort val)
+mc_error_code_e mc_write_ushort(int fd, const char* address, ushort val)
 {
-	bool ret = false;
-	if (fd > 0 && address != NULL)
-	{
-		int write_len = 2;
-		byte_array_info write_data;
-		memset(&write_data, 0, sizeof(write_data));
-		write_data.data = (byte*)malloc(write_len);
-		write_data.length = write_len;
+	if (fd <= 0 || address == NULL)
+		return MC_ERROR_CODE_INVALID_PARAMETER;
 
-		ushort2bytes(val, write_data.data);
-		ret = write_word_value(fd, address, 1, write_data);
-	}
-	return ret;
+	int write_len = 2;
+	byte_array_info write_data;
+	memset(&write_data, 0, sizeof(write_data));
+	write_data.data = (byte*)malloc(write_len);
+	write_data.length = write_len;
+
+	ushort2bytes(val, write_data.data);
+	return write_word_value(fd, address, 1, write_data);
 }
 
-bool mc_write_int32(int fd, const char* address, int32 val)
+mc_error_code_e mc_write_int32(int fd, const char* address, int32 val)
 {
-	bool ret = false;
-	if (fd > 0 && address != NULL)
-	{
-		int write_len = 4;
-		byte_array_info write_data;
-		memset(&write_data, 0, sizeof(write_data));
-		write_data.data = (byte*)malloc(write_len);
-		write_data.length = write_len;
+	if (fd <= 0 || address == NULL)
+		return MC_ERROR_CODE_INVALID_PARAMETER;
 
-		int2bytes(val, write_data.data);
-		ret = write_word_value(fd, address, 2, write_data);
-	}
-	return ret;
+	int write_len = 4;
+	byte_array_info write_data;
+	memset(&write_data, 0, sizeof(write_data));
+	write_data.data = (byte*)malloc(write_len);
+	write_data.length = write_len;
+
+	int2bytes(val, write_data.data);
+	return write_word_value(fd, address, 2, write_data);
 }
 
-bool mc_write_uint32(int fd, const char* address, uint32 val)
+mc_error_code_e mc_write_uint32(int fd, const char* address, uint32 val)
 {
-	bool ret = false;
-	if (fd > 0 && address != NULL)
-	{
-		int write_len = 4;
-		byte_array_info write_data;
-		memset(&write_data, 0, sizeof(write_data));
-		write_data.data = (byte*)malloc(write_len);
-		write_data.length = write_len;
+	if (fd <= 0 || address == NULL)
+		return MC_ERROR_CODE_INVALID_PARAMETER;
 
-		uint2bytes(val, write_data.data);
-		ret = write_word_value(fd, address, 2, write_data);
-	}
-	return ret;
+	int write_len = 4;
+	byte_array_info write_data;
+	memset(&write_data, 0, sizeof(write_data));
+	write_data.data = (byte*)malloc(write_len);
+	write_data.length = write_len;
+
+	uint2bytes(val, write_data.data);
+	return write_word_value(fd, address, 2, write_data);
 }
 
-bool mc_write_int64(int fd, const char* address, int64 val)
+mc_error_code_e mc_write_int64(int fd, const char* address, int64 val)
 {
-	bool ret = false;
-	if (fd > 0 && address != NULL)
-	{
-		int write_len = 8;
-		byte_array_info write_data;
-		memset(&write_data, 0, sizeof(write_data));
-		write_data.data = (byte*)malloc(write_len);
-		write_data.length = write_len;
+	if (fd <= 0 || address == NULL)
+		return MC_ERROR_CODE_INVALID_PARAMETER;
+	int write_len = 8;
+	byte_array_info write_data;
+	memset(&write_data, 0, sizeof(write_data));
+	write_data.data = (byte*)malloc(write_len);
+	write_data.length = write_len;
 
-		bigInt2bytes(val, write_data.data);
-		ret = write_word_value(fd, address, 4, write_data);
-	}
-	return ret;
+	bigInt2bytes(val, write_data.data);
+	return write_word_value(fd, address, 4, write_data);
 }
 
-bool mc_write_uint64(int fd, const char* address, uint64 val)
+mc_error_code_e mc_write_uint64(int fd, const char* address, uint64 val)
 {
-	bool ret = false;
-	if (fd > 0 && address != NULL)
-	{
-		int write_len = 8;
-		byte_array_info write_data;
-		memset(&write_data, 0, sizeof(write_data));
-		write_data.data = (byte*)malloc(write_len);
-		write_data.length = write_len;
+	if (fd <= 0 || address == NULL)
+		return MC_ERROR_CODE_INVALID_PARAMETER;
 
-		ubigInt2bytes(val, write_data.data);
-		ret = write_word_value(fd, address, 4, write_data);
-	}
-	return ret;
+	int write_len = 8;
+	byte_array_info write_data;
+	memset(&write_data, 0, sizeof(write_data));
+	write_data.data = (byte*)malloc(write_len);
+	write_data.length = write_len;
+
+	ubigInt2bytes(val, write_data.data);
+	return write_word_value(fd, address, 4, write_data);
 }
 
-bool mc_write_float(int fd, const char* address, float val)
+mc_error_code_e mc_write_float(int fd, const char* address, float val)
 {
-	bool ret = false;
-	if (fd > 0 && address != NULL)
-	{
-		int write_len = 4;
-		byte_array_info write_data;
-		memset(&write_data, 0, sizeof(write_data));
-		write_data.data = (byte*)malloc(write_len);
-		write_data.length = write_len;
+	if (fd <= 0 || address == NULL)
+		return MC_ERROR_CODE_INVALID_PARAMETER;
 
-		float2bytes(val, write_data.data);
-		ret = write_word_value(fd, address, 2, write_data);
-	}
-	return ret;
+	int write_len = 4;
+	byte_array_info write_data;
+	memset(&write_data, 0, sizeof(write_data));
+	write_data.data = (byte*)malloc(write_len);
+	write_data.length = write_len;
+
+	float2bytes(val, write_data.data);
+	return write_word_value(fd, address, 2, write_data);
 }
 
-bool mc_write_double(int fd, const char* address, double val)
+mc_error_code_e mc_write_double(int fd, const char* address, double val)
 {
-	bool ret = false;
-	if (fd > 0 && address != NULL)
-	{
-		int write_len = 8;
-		byte_array_info write_data;
-		memset(&write_data, 0, sizeof(write_data));
-		write_data.data = (byte*)malloc(write_len);
-		write_data.length = write_len;
+	if (fd <= 0 || address == NULL)
+		return MC_ERROR_CODE_INVALID_PARAMETER;
 
-		double2bytes(val, write_data.data);
-		ret = write_word_value(fd, address, 4, write_data);
-	}
-	return ret;
+	int write_len = 8;
+	byte_array_info write_data;
+	memset(&write_data, 0, sizeof(write_data));
+	write_data.data = (byte*)malloc(write_len);
+	write_data.length = write_len;
+
+	double2bytes(val, write_data.data);
+	return  write_word_value(fd, address, 4, write_data);
 }
 
-bool mc_write_string(int fd, const char* address, int length, const char* val)
+mc_error_code_e mc_write_string(int fd, const char* address, int length, const char* val)
 {
-	bool ret = false;
-	if (fd > 0 && address != NULL && val != NULL)
-	{
-		int write_len = (length % 2) == 1 ? length + 1 : length;
-		byte_array_info write_data;
-		write_data.data = (byte*)malloc(write_len);
-		memset(write_data.data, 0, write_len);
-		memcpy(write_data.data, val, length);
-		write_data.length = write_len;
+	if (fd <= 0 || address == NULL || val == NULL)
+		return MC_ERROR_CODE_INVALID_PARAMETER;
 
-		ret = write_word_value(fd, address, write_len / 2, write_data);
-	}
-	return ret;
+	int write_len = (length % 2) == 1 ? length + 1 : length;
+	byte_array_info write_data = { 0 };
+	write_data.data = (byte*)malloc(write_len);
+	if (write_data.data == NULL)
+		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
+
+	memset(write_data.data, 0, write_len);
+	memcpy(write_data.data, val, length);
+	write_data.length = write_len;
+
+	return write_word_value(fd, address, write_len / 2, write_data);
 }
