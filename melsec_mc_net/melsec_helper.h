@@ -9,7 +9,7 @@ byte_array_info  build_ascii_write_word_core_command(melsec_mc_address_data addr
 byte_array_info  build_write_bit_core_command(melsec_mc_address_data address_data, bool_array_info value);
 byte_array_info  build_ascii_write_bit_core_command(melsec_mc_address_data address_data, bool_array_info value);
 
-byte_array_info  build_bytes_from_address(int address, melse_mc_data_type type);
+byte_array_info  build_bytes_from_address(int address, melsec_mc_data_type type);
 byte_array_info  build_ascii_bytes_from_ushort(unsigned short value);
 byte_array_info  build_ascii_bytes_from_int(int value);
 byte_array_info  build_ascii_bytes_from_byte_array(const byte* value, int length);

@@ -2,9 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-melse_mc_data_type mc_create_data_type(byte code, byte type, const char* ascii_code, int from_base)
+melsec_mc_data_type mc_create_data_type(byte code, byte type, const char* ascii_code, int from_base)
 {
-	melse_mc_data_type data_type;
+	melsec_mc_data_type data_type;
 	memset((void*)&data_type, 0, sizeof(data_type));
 	data_type.data_code = code;
 	data_type.data_type = type;

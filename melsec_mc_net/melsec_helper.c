@@ -217,7 +217,7 @@ byte_array_info build_ascii_write_bit_core_command(melsec_mc_address_data addres
 	return ret;
 }
 
-byte_array_info build_bytes_from_address(int address, melse_mc_data_type type)
+byte_array_info build_bytes_from_address(int address, melsec_mc_data_type type)
 {
 	byte* out = NULL;
 	char buffer[10];
