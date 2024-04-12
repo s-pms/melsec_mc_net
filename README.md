@@ -140,27 +140,27 @@ _读取地址，格式为"**M100**","**D100**","**W1A0**"_
 typedef bool (*pmc_mc_connect)(char *ip_addr, int port, byte network_addr, byte station_addr);
 typedef bool (*pmc_mc_disconnect)(int fd);
 
-typedef bool (*pmc_write_bool)(int fd, const char *address, bool val); // write
-typedef bool (*pmc_write_short)(int fd, const char *address, short val);
-typedef bool (*pmc_write_ushort)(int fd, const char *address, ushort val);
-typedef bool (*pmc_write_int32)(int fd, const char *address, int32 val);
-typedef bool (*pmc_write_uint32)(int fd, const char *address, uint32 val);
-typedef bool (*pmc_write_int64)(int fd, const char *address, int64 val);
-typedef bool (*pmc_write_uint64)(int fd, const char *address, uint64 val);
-typedef bool (*pmc_write_float)(int fd, const char *address, float val);
-typedef bool (*pmc_write_double)(int fd, const char *address, double val);
-typedef bool (*pmc_write_string)(int fd, const char *address, int length, const char *val);
+typedef mc_error_code_e (*pmc_write_bool)(int fd, const char *address, bool val); // write
+typedef mc_error_code_e (*pmc_write_short)(int fd, const char *address, short val);
+typedef mc_error_code_e (*pmc_write_ushort)(int fd, const char *address, ushort val);
+typedef mc_error_code_e (*pmc_write_int32)(int fd, const char *address, int32 val);
+typedef mc_error_code_e (*pmc_write_uint32)(int fd, const char *address, uint32 val);
+typedef mc_error_code_e (*pmc_write_int64)(int fd, const char *address, int64 val);
+typedef mc_error_code_e (*pmc_write_uint64)(int fd, const char *address, uint64 val);
+typedef mc_error_code_e (*pmc_write_float)(int fd, const char *address, float val);
+typedef mc_error_code_e (*pmc_write_double)(int fd, const char *address, double val);
+typedef mc_error_code_e (*pmc_write_string)(int fd, const char *address, int length, const char *val);
 
-typedef bool (*pmc_read_bool)(int fd, const char *address, bool *val); // read
-typedef bool (*pmc_read_short)(int fd, const char *address, short *val);
-typedef bool (*pmc_read_ushort)(int fd, const char *address, ushort *val);
-typedef bool (*pmc_read_int32)(int fd, const char *address, int32 *val);
-typedef bool (*pmc_read_uint32)(int fd, const char *address, uint32 *val);
-typedef bool (*pmc_read_int64)(int fd, const char *address, int64 *val);
-typedef bool (*pmc_read_uint64)(int fd, const char *address, uint64 *val);
-typedef bool (*pmc_read_float)(int fd, const char *address, float *val);
-typedef bool (*pmc_read_double)(int fd, const char *address, double *val);
-typedef bool (*pmc_read_string)(int fd, const char *address, int length, const char *val);
+typedef mc_error_code_e (*pmc_read_bool)(int fd, const char *address, bool *val); // read
+typedef mc_error_code_e (*pmc_read_short)(int fd, const char *address, short *val);
+typedef mc_error_code_e (*pmc_read_ushort)(int fd, const char *address, ushort *val);
+typedef mc_error_code_e (*pmc_read_int32)(int fd, const char *address, int32 *val);
+typedef mc_error_code_e (*pmc_read_uint32)(int fd, const char *address, uint32 *val);
+typedef mc_error_code_e (*pmc_read_int64)(int fd, const char *address, int64 *val);
+typedef mc_error_code_e (*pmc_read_uint64)(int fd, const char *address, uint64 *val);
+typedef mc_error_code_e (*pmc_read_float)(int fd, const char *address, float *val);
+typedef mc_error_code_e (*pmc_read_double)(int fd, const char *address, double *val);
+typedef mc_error_code_e (*pmc_read_string)(int fd, const char *address, int length, const char *val);
 
 pmc_mc_connect mc_connect;
 pmc_mc_disconnect mc_disconnect;
