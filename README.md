@@ -111,11 +111,7 @@ _读取地址，格式为"**M100**","**D100**","**W1A0**"_
 #include <stdlib.h>
 #pragma warning(disable : 4996)
 
-#define GET_RESULT(ret)     \
- {                       \
-  if (!ret)           \
-   failed_count++; \
- }
+#define GET_RESULT(ret)  { if (!ret) failed_count++; }
 
 // #define USE_SO
 #ifndef USE_SO
