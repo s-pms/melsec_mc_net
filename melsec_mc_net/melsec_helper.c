@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "melsec_helper.h"
+#include "socket.h"
 
 // 从三菱地址，是否位读取进行创建读取的MC的核心报文
 // is_bit 是否进行了位读取操作
@@ -395,9 +396,14 @@ mc_error_code_e mc_parse_read_response(byte_array_info response, byte_array_info
 	if (rsCount > 0 && (data != NULL))
 	{
 		data->data = (byte*)malloc(rsCount);
-		memset(data->data, 0, rsCount);
-		memcpy(data->data, response.data + 11, rsCount);
-		data->length = rsCount;
+		if (data->data != NULL)
+		{
+			memset(data->data, 0, rsCount);
+			memcpy(data->data, response.data + 11, rsCount);
+			data->length = rsCount;
+		}
+		else
+			ret = MC_ERROR_CODE_MALLOC_FAILED;
 	}
 	return ret;
 }
@@ -439,7 +445,7 @@ mc_error_code_e mc_parse_write_response(byte_array_info response, byte_array_inf
 
 bool mc_try_send_msg(int fd, byte_array_info* in_bytes)
 {
-	if (fd < -0 || in_bytes == NULL)
+	if (fd < 0 || in_bytes == NULL)
 		return false;
 
 	int retry_times = 0;
