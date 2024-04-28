@@ -146,7 +146,7 @@ mc_error_code_e write_bool_value(int fd, const char* address, int length, bool_a
 	}
 
 	if (recv_size < MIN_RESPONSE_HEADER_SIZE) {
-		free(response.data);
+		RELEASE_DATA(response.data);
 		return MC_ERROR_CODE_RESPONSE_HEADER_FAILED;
 	}
 
