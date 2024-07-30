@@ -45,13 +45,12 @@ mc_error_code_e read_bool_value(int fd, const char* address, int length, byte_ar
 
 	byte_array_info core_cmd = build_read_core_command(address_data, true);
 	if (core_cmd.data == NULL)
-	{
-		RELEASE_DATA(core_cmd.data);
 		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
-	}
 
 	byte_array_info cmd = pack_mc_command(&core_cmd, g_network_address.network_number, g_network_address.station_number);
 	RELEASE_DATA(core_cmd.data);
+	if (cmd.data == NULL)
+		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
 
 	bool send_ret = mc_try_send_msg(fd, &cmd);
 	RELEASE_DATA(cmd.data);
@@ -95,10 +94,7 @@ mc_error_code_e read_address_data(int fd, melsec_mc_address_data address_data, b
 	mc_error_code_e ret = MC_ERROR_CODE_FAILED;
 	byte_array_info core_cmd = build_read_core_command(address_data, false);
 	if (core_cmd.data == NULL)
-	{
-		RELEASE_DATA(core_cmd.data);
 		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
-	}
 
 	byte_array_info cmd = pack_mc_command(&core_cmd, g_network_address.network_number, g_network_address.station_number);
 	RELEASE_DATA(core_cmd.data);
@@ -398,16 +394,16 @@ byte_array_info pack_mc_command(byte_array_info* mc_core, byte network_number, b
 	byte* command = (byte*)malloc(cmd_len);//core command + header command
 	memset(command, 0, core_len + 11);
 
-	command[0] = 0x50;					//¸±±êÌâ
+	command[0] = 0x50;					//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	command[1] = 0x00;
-	command[2] = network_number;		// ÍøÂçºÅ
-	command[3] = 0xFF;					// PLC±àºÅ
-	command[4] = 0xFF;					// Ä¿±êÄ£¿éIO±àºÅ
+	command[2] = network_number;		// ï¿½ï¿½ï¿½ï¿½ï¿½
+	command[3] = 0xFF;					// PLCï¿½ï¿½ï¿½
+	command[4] = 0xFF;					// Ä¿ï¿½ï¿½Ä£ï¿½ï¿½IOï¿½ï¿½ï¿½
 	command[5] = 0x03;
-	command[6] = station_number;		// Ä¿±êÄ£¿éÕ¾ºÅ
-	command[7] = (byte)(cmd_len - 9);	// ÇëÇóÊý¾Ý³¤¶È
+	command[6] = station_number;		// Ä¿ï¿½ï¿½Ä£ï¿½ï¿½Õ¾ï¿½ï¿½
+	command[7] = (byte)(cmd_len - 9);	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý³ï¿½ï¿½ï¿½
 	command[8] = (byte)((cmd_len - 9) >> 8);
-	command[9] = 0x0A;					// CPU¼àÊÓ¶¨Ê±Æ÷
+	command[9] = 0x0A;					// CPUï¿½ï¿½ï¿½Ó¶ï¿½Ê±ï¿½ï¿½
 	command[10] = 0x00;
 	memcpy(command + 11, mc_core->data, mc_core->length);
 
@@ -420,7 +416,7 @@ byte_array_info pack_mc_command(byte_array_info* mc_core, byte network_number, b
 
 void extract_actual_bool_data(byte_array_info* response)
 {
-	// Î»¶ÁÈ¡
+	// Î»ï¿½ï¿½È¡
 	int resp_len = response->length * 2;
 	byte* content = (byte*)malloc(resp_len);
 	memset(content, 0, resp_len);
@@ -443,7 +439,7 @@ mc_error_code_e mc_read_response(int fd, byte_array_info* response, int* read_co
 	if (fd < 0 || read_count == 0 || response == NULL)
 		return MC_ERROR_CODE_INVALID_PARAMETER;
 
-	byte* temp = malloc(BUFFER_SIZE); // ¶¯Ì¬·ÖÅä»º³åÇø
+	byte* temp = malloc(BUFFER_SIZE); // ï¿½ï¿½Ì¬ï¿½ï¿½ï¿½ä»ºï¿½ï¿½ï¿½ï¿½
 	if (temp == NULL)
 		return MC_ERROR_CODE_MALLOC_FAILED;
 
