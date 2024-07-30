@@ -45,12 +45,17 @@ mc_error_code_e read_bool_value(int fd, const char* address, int length, byte_ar
 
 	byte_array_info core_cmd = build_read_core_command(address_data, true);
 	if (core_cmd.data == NULL)
+	{
+		RELEASE_DATA(core_cmd.data);
 		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
+	}
 
 	byte_array_info cmd = pack_mc_command(&core_cmd, g_network_address.network_number, g_network_address.station_number);
-	free(core_cmd.data);
+	RELEASE_DATA(core_cmd.data);
 
-	if (!mc_try_send_msg(fd, &cmd))
+	bool send_ret = mc_try_send_msg(fd, &cmd);
+	RELEASE_DATA(cmd.data);
+	if (!send_ret)
 		return MC_ERROR_CODE_SOCKET_SEND_FAILED;
 
 	byte_array_info response = { 0 };
@@ -62,7 +67,7 @@ mc_error_code_e read_bool_value(int fd, const char* address, int length, byte_ar
 	}
 
 	if (recv_size < MIN_RESPONSE_HEADER_SIZE) {
-		free(response.data);
+		RELEASE_DATA(response.data);
 		return MC_ERROR_CODE_RESPONSE_HEADER_FAILED;
 	}
 
@@ -90,12 +95,19 @@ mc_error_code_e read_address_data(int fd, melsec_mc_address_data address_data, b
 	mc_error_code_e ret = MC_ERROR_CODE_FAILED;
 	byte_array_info core_cmd = build_read_core_command(address_data, false);
 	if (core_cmd.data == NULL)
+	{
+		RELEASE_DATA(core_cmd.data);
 		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
+	}
 
 	byte_array_info cmd = pack_mc_command(&core_cmd, g_network_address.network_number, g_network_address.station_number);
-	free(core_cmd.data);
+	RELEASE_DATA(core_cmd.data);
+	if (cmd.data == NULL)
+		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
 
-	if (!mc_try_send_msg(fd, &cmd))
+	bool send_ret = mc_try_send_msg(fd, &cmd);
+	RELEASE_DATA(cmd.data);
+	if (!send_ret)
 		return MC_ERROR_CODE_SOCKET_SEND_FAILED;
 
 	byte_array_info response = { 0 };
@@ -108,7 +120,7 @@ mc_error_code_e read_address_data(int fd, melsec_mc_address_data address_data, b
 	}
 
 	if (recv_size < MIN_RESPONSE_HEADER_SIZE) {
-		free(response.data);
+		RELEASE_DATA(response.data);
 		return MC_ERROR_CODE_RESPONSE_HEADER_FAILED;
 	}
 
@@ -127,13 +139,18 @@ mc_error_code_e write_bool_value(int fd, const char* address, int length, bool_a
 		return MC_ERROR_CODE_PARSE_ADDRESS_FAILED;
 
 	byte_array_info core_cmd = build_write_bit_core_command(address_data, in_bytes);
+	RELEASE_DATA(in_bytes.data);
 	if (core_cmd.data == NULL)
 		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
 
 	byte_array_info cmd = pack_mc_command(&core_cmd, g_network_address.network_number, g_network_address.station_number);
-	free(core_cmd.data);
+	RELEASE_DATA(core_cmd.data);
+	if (cmd.data == NULL)
+		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
 
-	if (!mc_try_send_msg(fd, &cmd))
+	bool send_ret = mc_try_send_msg(fd, &cmd);
+	RELEASE_DATA(cmd.data);
+	if (!send_ret)
 		return MC_ERROR_CODE_SOCKET_SEND_FAILED;
 
 	byte_array_info response = { 0 };
@@ -168,13 +185,18 @@ mc_error_code_e write_address_data(int fd, melsec_mc_address_data address_data, 
 {
 	mc_error_code_e ret = MC_ERROR_CODE_FAILED;
 	byte_array_info core_cmd = build_write_word_core_command(address_data, in_bytes);
+	RELEASE_DATA(in_bytes.data);
 	if (core_cmd.data == NULL)
 		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
 
 	byte_array_info cmd = pack_mc_command(&core_cmd, g_network_address.network_number, g_network_address.station_number);
-	free(core_cmd.data);
+	RELEASE_DATA(core_cmd.data);
+	if (cmd.data == NULL)
+		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
 
-	if (!mc_try_send_msg(fd, &cmd))
+	bool send_ret = mc_try_send_msg(fd, &cmd);
+	RELEASE_DATA(cmd.data);
+	if (!send_ret)
 		return MC_ERROR_CODE_SOCKET_SEND_FAILED;
 
 	byte_array_info response = { 0 };
@@ -209,12 +231,13 @@ mc_error_code_e mc_remote_run(int fd)
 	temp_info.data = core_cmd;
 	temp_info.length = core_cmd_len;
 	byte_array_info  cmd = pack_mc_command(&temp_info, g_network_address.network_number, g_network_address.station_number);
-	free(core_cmd);
-
+	RELEASE_DATA(core_cmd);
 	if (cmd.data == NULL)
 		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
 
-	if (!mc_try_send_msg(fd, &cmd))
+	bool send_ret = mc_try_send_msg(fd, &cmd);
+	RELEASE_DATA(cmd.data);
+	if (!send_ret)
 		return MC_ERROR_CODE_SOCKET_SEND_FAILED;
 
 	byte_array_info response = { 0 };
@@ -227,7 +250,7 @@ mc_error_code_e mc_remote_run(int fd)
 	}
 
 	if (recv_size < MIN_RESPONSE_HEADER_SIZE) {
-		free(response.data);
+		RELEASE_DATA(response.data);
 		return MC_ERROR_CODE_RESPONSE_HEADER_FAILED;
 	}
 
@@ -250,11 +273,13 @@ mc_error_code_e mc_remote_stop(int fd)
 	temp_info.data = core_cmd;
 	temp_info.length = core_cmd_len;
 	byte_array_info  cmd = pack_mc_command(&temp_info, g_network_address.network_number, g_network_address.station_number);
-	free(core_cmd);
+	RELEASE_DATA(core_cmd);
 	if (cmd.data == NULL)
 		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
 
-	if (!mc_try_send_msg(fd, &cmd))
+	bool send_ret = mc_try_send_msg(fd, &cmd);
+	RELEASE_DATA(cmd.data);
+	if (!send_ret)
 		return MC_ERROR_CODE_SOCKET_SEND_FAILED;
 
 	byte_array_info response = { 0 };
@@ -267,7 +292,7 @@ mc_error_code_e mc_remote_stop(int fd)
 	}
 
 	if (recv_size < MIN_RESPONSE_HEADER_SIZE) {
-		free(response.data);
+		RELEASE_DATA(response.data);
 		return MC_ERROR_CODE_RESPONSE_HEADER_FAILED;
 	}
 
@@ -290,12 +315,13 @@ mc_error_code_e mc_remote_reset(int fd)
 	temp_info.data = core_cmd;
 	temp_info.length = core_cmd_len;
 	byte_array_info  cmd = pack_mc_command(&temp_info, g_network_address.network_number, g_network_address.station_number);
-	free(core_cmd);
-
+	RELEASE_DATA(core_cmd);
 	if (cmd.data == NULL)
 		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
 
-	if (!mc_try_send_msg(fd, &cmd))
+	bool send_ret = mc_try_send_msg(fd, &cmd);
+	RELEASE_DATA(cmd.data);
+	if (!send_ret)
 		return MC_ERROR_CODE_SOCKET_SEND_FAILED;
 
 	byte_array_info response = { 0 };
@@ -308,7 +334,7 @@ mc_error_code_e mc_remote_reset(int fd)
 	}
 
 	if (recv_size < MIN_RESPONSE_HEADER_SIZE) {
-		free(response.data);
+		RELEASE_DATA(response.data);
 		return MC_ERROR_CODE_RESPONSE_HEADER_FAILED;
 	}
 
@@ -333,12 +359,13 @@ mc_error_code_e mc_read_plc_type(int fd, char** type)
 	temp_info.data = core_cmd;
 	temp_info.length = core_cmd_len;
 	byte_array_info  cmd = pack_mc_command(&temp_info, g_network_address.network_number, g_network_address.station_number);
-	free(core_cmd);
-
+	RELEASE_DATA(core_cmd);
 	if (cmd.data == NULL)
 		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
 
-	if (!mc_try_send_msg(fd, &cmd))
+	bool send_ret = mc_try_send_msg(fd, &cmd);
+	RELEASE_DATA(cmd.data);
+	if (!send_ret)
 		return MC_ERROR_CODE_SOCKET_SEND_FAILED;
 
 	byte_array_info response = { 0 };
@@ -351,7 +378,7 @@ mc_error_code_e mc_read_plc_type(int fd, char** type)
 	}
 
 	if (recv_size < MIN_RESPONSE_HEADER_SIZE) {
-		free(response.data);
+		RELEASE_DATA(response.data);
 		return MC_ERROR_CODE_RESPONSE_HEADER_FAILED;
 	}
 
