@@ -17,8 +17,6 @@
 #include <sys/socket.h>
 #endif
 
-#define RELEASE_DATA(addr) { if(addr != NULL) { free(addr);} }
-
 int mc_connect(char* ip_addr, int port, byte network_addr, byte station_addr)
 {
 	int fd = -1;
@@ -181,7 +179,6 @@ mc_error_code_e write_address_data(int fd, melsec_mc_address_data address_data, 
 {
 	mc_error_code_e ret = MC_ERROR_CODE_FAILED;
 	byte_array_info core_cmd = build_write_word_core_command(address_data, in_bytes);
-	RELEASE_DATA(in_bytes.data);
 	if (core_cmd.data == NULL)
 		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
 
@@ -205,7 +202,7 @@ mc_error_code_e write_address_data(int fd, melsec_mc_address_data address_data, 
 	}
 
 	if (recv_size < MIN_RESPONSE_HEADER_SIZE) {
-		free(response.data);
+		RELEASE_DATA(response.data);
 		return MC_ERROR_CODE_RESPONSE_HEADER_FAILED;
 	}
 
@@ -429,7 +426,7 @@ void extract_actual_bool_data(byte_array_info* response)
 		if ((response->data[i] & 0x01) == 0x01)
 			content[i * 2 + 1] = 0x01;
 	}
-	free(response->data);
+	RELEASE_DATA(response->data);
 	response->data = content;
 	response->length = resp_len;
 }

@@ -138,7 +138,7 @@ int main(int argc, char **argv)
 	libso_fun(szdllpath);
 #endif
 
-	char *plc_ip = "192.168.122.148";
+	char *plc_ip = "127.0.0.1";
 	int plc_port = 6001;
 	if (argc > 1)
 	{
@@ -155,7 +155,7 @@ int main(int argc, char **argv)
 	char* type = NULL;
 	ret = mc_read_plc_type(fd, &type);
 	printf("plc type: %s\n", type);
-	free(type);
+	RELEASE_DATA(type);
 #endif
 
 	const int TEST_COUNT = 5000;
@@ -275,7 +275,7 @@ int main(int argc, char **argv)
 		char *str_val = NULL;
 		ret = mc_read_string(fd, "D100", length, &str_val);
 		printf("Read\t D100 \tstring:\t %s\n", str_val);
-		free(str_val);
+		RELEASE_DATA(str_val);
 		GET_RESULT(ret);
 
 #ifdef _WIN32

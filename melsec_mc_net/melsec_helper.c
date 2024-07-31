@@ -51,14 +51,14 @@ byte_array_info build_ascii_read_core_command(melsec_mc_address_data address_dat
 	command[13] = temp.data[3];
 	command[14] = temp.data[4];
 	command[15] = temp.data[5];
-	free(temp.data);
+	RELEASE_DATA(temp.data);
 
 	temp = build_ascii_bytes_from_ushort(address_data.length);
 	command[16] = temp.data[0];                               // 软元件点数
 	command[17] = temp.data[1];
 	command[18] = temp.data[2];
 	command[19] = temp.data[3];
-	free(temp.data);
+	RELEASE_DATA(temp.data);
 
 	byte_array_info ret;
 	ret.data = command;
@@ -73,6 +73,7 @@ byte_array_info build_write_word_core_command(melsec_mc_address_data address_dat
 		val_len = value.length;
 
 	byte* command = (byte*)malloc(10 + val_len);
+	memset(command, 0, 10 + val_len);
 	command[0] = 0x01;											// 批量写入数据命令
 	command[1] = 0x14;
 	command[2] = 0x00;											// 以字为单位成批读取
@@ -86,7 +87,7 @@ byte_array_info build_write_word_core_command(melsec_mc_address_data address_dat
 	if (value.data != NULL)
 	{
 		memcpy(command + 10, value.data, val_len);
-		free(value.data);
+		RELEASE_DATA(value.data);
 	}
 
 	byte_array_info ret;
@@ -123,18 +124,18 @@ byte_array_info build_ascii_write_word_core_command(melsec_mc_address_data addre
 	command[13] = temp.data[3];
 	command[14] = temp.data[4];
 	command[15] = temp.data[5];
-	free(temp.data);
+	RELEASE_DATA(temp.data);
 
 	temp = build_ascii_bytes_from_ushort(address_data.length);
 	command[16] = temp.data[0];                               // 软元件点数
 	command[17] = temp.data[1];
 	command[18] = temp.data[2];
 	command[19] = temp.data[3];
-	free(temp.data);
+	RELEASE_DATA(temp.data);
 
 	if (value.data != NULL)
 		memcpy(command + 20, buffer.data, val_len);
-	free(buffer.data);
+	RELEASE_DATA(buffer.data);
 
 	byte_array_info ret;
 	ret.data = command;
@@ -163,7 +164,7 @@ byte_array_info build_write_bit_core_command(melsec_mc_address_data address_data
 	command[9] = (byte)(address_data.length >> 8);
 
 	memcpy(command + 10, buffer.data, val_len);
-	free(buffer.data);
+	RELEASE_DATA(buffer.data);
 
 	byte_array_info ret;
 	ret.data = command;
@@ -198,19 +199,19 @@ byte_array_info build_ascii_write_bit_core_command(melsec_mc_address_data addres
 	command[13] = temp.data[3];
 	command[14] = temp.data[4];
 	command[15] = temp.data[5];
-	free(temp.data);
+	RELEASE_DATA(temp.data);
 
 	temp = build_ascii_bytes_from_ushort(address_data.length);
 	command[16] = temp.data[0];                               // 软元件点数
 	command[17] = temp.data[1];
 	command[18] = temp.data[2];
 	command[19] = temp.data[3];
-	free(temp.data);
+	RELEASE_DATA(temp.data);
 
 	if (value.data != NULL)
 		memcpy(command + 20, buffer.data, val_len);
 
-	free(buffer.data);
+	RELEASE_DATA(buffer.data);
 
 	byte_array_info ret;
 	ret.data = command;
@@ -381,12 +382,8 @@ mc_error_code_e mc_parse_read_response(byte_array_info response, byte_array_info
 		return MC_ERROR_CODE_INVALID_PARAMETER;
 
 	int min = 11;
-	byte count[2];
-	count[0] = response.data[min - 3];
-	count[1] = response.data[min - 4];
-	byte code[2];
-	code[0] = response.data[min - 2];
-	code[1] = response.data[min - 1];
+	byte count[2] = { response.data[min - 3] , response.data[min - 4] };
+	byte code[2] = { response.data[min - 2] , response.data[min - 1] };
 
 	uint16_t rsCount = count[0] * 256 + count[1] - 2;
 	uint16_t rsCode = code[0] * 256 + code[1];
@@ -415,12 +412,8 @@ mc_error_code_e mc_parse_write_response(byte_array_info response, byte_array_inf
 		return MC_ERROR_CODE_INVALID_PARAMETER;
 
 	int min = 11;
-	byte count[2];
-	count[0] = response.data[min - 3];
-	count[1] = response.data[min - 4];
-	byte code[2];
-	code[0] = response.data[min - 2];
-	code[1] = response.data[min - 1];
+	byte count[2] = { response.data[min - 3] , response.data[min - 4] };
+	byte code[2] = { response.data[min - 2] , response.data[min - 1] };
 
 	uint16_t rsCount = count[0] * 256 + count[1] - 2;
 	uint16_t rsCode = code[0] * 256 + code[1];

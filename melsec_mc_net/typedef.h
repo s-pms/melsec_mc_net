@@ -11,6 +11,7 @@ typedef unsigned int uint32;
 typedef long long int64;
 typedef unsigned long long uint64;
 
+#define RELEASE_DATA(addr) { if(addr != NULL) { free(addr);} }
 
 typedef enum _tag_mc_error_code
 {
