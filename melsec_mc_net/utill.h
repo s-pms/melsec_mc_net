@@ -4,19 +4,19 @@
 #include "typedef.h"
 
 typedef struct _tag_plc_network_address {
-	byte	network_number; // 网络号，通常为0;依据PLC的配置而配置
-	byte	station_number; // 网络站号，通常为0;依据PLC的配置而配置
-}plc_network_address;
+	byte network_number; // 网络号，通常为0;依据PLC的配置而配置
+	byte station_number; // 网络站号，通常为0;依据PLC的配置而配置
+} plc_network_address;
 
 typedef struct _tag_byte_array_info {
-	byte* data;	// 内容
+	byte* data; // 内容
 	int length; // 长度
-}byte_array_info;
+} byte_array_info;
 
 typedef struct _tag_bool_array_info {
-	bool* data;	// 内容
+	bool* data; // 内容
 	int length; // 长度
-}bool_array_info;
+} bool_array_info;
 
 void short2bytes(short i, byte* bytes);
 short bytes2short(byte* bytes);
@@ -43,7 +43,7 @@ void double2bytes(double i, byte* bytes);
 double bytes2double(byte* bytes);
 
 #ifndef _WIN32
-char* itoa(unsigned long long  value, char str[], int radix);
+char* itoa(unsigned long long value, char str[], int radix);
 #endif // !_WIN32
 
-#endif
+#endif // __UTILL_H__

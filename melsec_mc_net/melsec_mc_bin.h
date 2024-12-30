@@ -34,6 +34,6 @@ mc_error_code_e mc_write_string(int fd, const char* address, int length, const c
 mc_error_code_e mc_remote_run(int fd);
 mc_error_code_e mc_remote_stop(int fd);
 mc_error_code_e mc_remote_reset(int fd);
-mc_error_code_e mc_read_plc_type(int fd, char** type); //need free type 
+mc_error_code_e mc_read_plc_type(int fd, char** type); //need free type
 
 #endif //__H_MELSECMCNET_H__

@@ -35,30 +35,30 @@
 
 #include "typedef.h"
 
-typedef bool (*pmc_mc_connect)(char *ip_addr, int port, byte network_addr, byte station_addr);
+typedef bool (*pmc_mc_connect)(char* ip_addr, int port, byte network_addr, byte station_addr);
 typedef bool (*pmc_mc_disconnect)(int fd);
 
-typedef bool (*pmc_write_bool)(int fd, const char *address, bool val); // write
-typedef bool (*pmc_write_short)(int fd, const char *address, short val);
-typedef bool (*pmc_write_ushort)(int fd, const char *address, ushort val);
-typedef bool (*pmc_write_int32)(int fd, const char *address, int32 val);
-typedef bool (*pmc_write_uint32)(int fd, const char *address, uint32 val);
-typedef bool (*pmc_write_int64)(int fd, const char *address, int64 val);
-typedef bool (*pmc_write_uint64)(int fd, const char *address, uint64 val);
-typedef bool (*pmc_write_float)(int fd, const char *address, float val);
-typedef bool (*pmc_write_double)(int fd, const char *address, double val);
-typedef bool (*pmc_write_string)(int fd, const char *address, int length, const char *val);
+typedef bool (*pmc_write_bool)(int fd, const char* address, bool val); // write
+typedef bool (*pmc_write_short)(int fd, const char* address, short val);
+typedef bool (*pmc_write_ushort)(int fd, const char* address, ushort val);
+typedef bool (*pmc_write_int32)(int fd, const char* address, int32 val);
+typedef bool (*pmc_write_uint32)(int fd, const char* address, uint32 val);
+typedef bool (*pmc_write_int64)(int fd, const char* address, int64 val);
+typedef bool (*pmc_write_uint64)(int fd, const char* address, uint64 val);
+typedef bool (*pmc_write_float)(int fd, const char* address, float val);
+typedef bool (*pmc_write_double)(int fd, const char* address, double val);
+typedef bool (*pmc_write_string)(int fd, const char* address, int length, const char* val);
 
-typedef bool (*pmc_read_bool)(int fd, const char *address, bool *val); // read
-typedef bool (*pmc_read_short)(int fd, const char *address, short *val);
-typedef bool (*pmc_read_ushort)(int fd, const char *address, ushort *val);
-typedef bool (*pmc_read_int32)(int fd, const char *address, int32 *val);
-typedef bool (*pmc_read_uint32)(int fd, const char *address, uint32 *val);
-typedef bool (*pmc_read_int64)(int fd, const char *address, int64 *val);
-typedef bool (*pmc_read_uint64)(int fd, const char *address, uint64 *val);
-typedef bool (*pmc_read_float)(int fd, const char *address, float *val);
-typedef bool (*pmc_read_double)(int fd, const char *address, double *val);
-typedef bool (*pmc_read_string)(int fd, const char *address, int length, const char *val);
+typedef bool (*pmc_read_bool)(int fd, const char* address, bool* val); // read
+typedef bool (*pmc_read_short)(int fd, const char* address, short* val);
+typedef bool (*pmc_read_ushort)(int fd, const char* address, ushort* val);
+typedef bool (*pmc_read_int32)(int fd, const char* address, int32* val);
+typedef bool (*pmc_read_uint32)(int fd, const char* address, uint32* val);
+typedef bool (*pmc_read_int64)(int fd, const char* address, int64* val);
+typedef bool (*pmc_read_uint64)(int fd, const char* address, uint64* val);
+typedef bool (*pmc_read_float)(int fd, const char* address, float* val);
+typedef bool (*pmc_read_double)(int fd, const char* address, double* val);
+typedef bool (*pmc_read_string)(int fd, const char* address, int length, const char* val);
 
 pmc_mc_connect mc_connect;
 pmc_mc_disconnect mc_disconnect;
@@ -85,9 +85,9 @@ pmc_read_float mc_read_float;
 pmc_read_double mc_read_double;
 pmc_read_string mc_read_string;
 
-void libso_fun(char *szdllpath)
+void libso_fun(char* szdllpath)
 {
-	void *handle_so;
+	void* handle_so;
 	handle_so = dlopen(szdllpath, RTLD_NOW);
 	if (!handle_so)
 	{
@@ -122,7 +122,7 @@ void libso_fun(char *szdllpath)
 }
 #endif
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
 #ifdef _WIN32
 	WSADATA wsa;
@@ -138,7 +138,7 @@ int main(int argc, char **argv)
 	libso_fun(szdllpath);
 #endif
 
-	char *plc_ip = "127.0.0.1";
+	char* plc_ip = "127.0.0.1";
 	int plc_port = 6001;
 	if (argc > 1)
 	{
@@ -272,7 +272,7 @@ int main(int argc, char **argv)
 		printf("Write\t D100 \tstring:\t %s, \tret: %d\n", sz_write, ret);
 		GET_RESULT(ret);
 
-		char *str_val = NULL;
+		char* str_val = NULL;
 		ret = mc_read_string(fd, "D100", length, &str_val);
 		printf("Read\t D100 \tstring:\t %s\n", str_val);
 		RELEASE_DATA(str_val);

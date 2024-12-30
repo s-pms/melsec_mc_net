@@ -16,7 +16,7 @@
 #endif
 
 int mc_write_msg(int fd, void* buf, int nbytes) {
-	int   nleft, nwritten;
+	int nleft, nwritten;
 	char* ptr = (char*)buf;
 
 	nleft = nbytes;
@@ -39,7 +39,7 @@ int mc_write_msg(int fd, void* buf, int nbytes) {
 }
 
 int mc_read_msg(int fd, void* buf, int nbytes) {
-	int   nleft, nread;
+	int nleft, nread;
 	char* ptr = (char*)buf;
 
 	nleft = nbytes;
@@ -69,9 +69,9 @@ int mc_read_msg(int fd, void* buf, int nbytes) {
 }
 
 int mc_open_tcp_client_socket(char* destIp, short destPort) {
-	int                sockFd = 0;
+	int sockFd = 0;
 	struct sockaddr_in serverAddr;
-	int                ret;
+	int ret;
 
 	sockFd = (int)socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
 
@@ -106,8 +106,7 @@ int mc_open_tcp_client_socket(char* destIp, short destPort) {
 }
 
 void mc_close_tcp_socket(int sockFd) {
-	if (sockFd > 0)
-	{
+	if (sockFd > 0) {
 #ifdef _WIN32
 		closesocket(sockFd);
 #else
