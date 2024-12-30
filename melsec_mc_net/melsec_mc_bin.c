@@ -389,22 +389,25 @@ byte_array_info pack_mc_command(byte_array_info* mc_core, byte network_number, b
 	int core_len = mc_core->length;
 	int cmd_len = core_len + 11;
 	byte* command = (byte*)malloc(cmd_len);//core command + header command
-	memset(command, 0, core_len + 11);
+	if (command != NULL)
+	{
+		memset(command, 0, core_len + 11);
 
-	command[0] = 0x50;					//������
-	command[1] = 0x00;
-	command[2] = network_number;		// �����
-	command[3] = 0xFF;					// PLC���
-	command[4] = 0xFF;					// Ŀ��ģ��IO���
-	command[5] = 0x03;
-	command[6] = station_number;		// Ŀ��ģ��վ��
-	command[7] = (byte)(cmd_len - 9);	// �������ݳ���
-	command[8] = (byte)((cmd_len - 9) >> 8);
-	command[9] = 0x0A;					// CPU���Ӷ�ʱ��
-	command[10] = 0x00;
-	memcpy(command + 11, mc_core->data, mc_core->length);
+		command[0] = 0x50;
+		command[1] = 0x00;
+		command[2] = network_number;
+		command[3] = 0xFF;
+		command[4] = 0xFF;
+		command[5] = 0x03;
+		command[6] = station_number;
+		command[7] = (byte)(cmd_len - 9);
+		command[8] = (byte)((cmd_len - 9) >> 8);
+		command[9] = 0x0A;
+		command[10] = 0x00;
+		memcpy(command + 11, mc_core->data, mc_core->length);
+	}
 
-	byte_array_info ret;
+	byte_array_info ret = { 0 };
 	ret.data = command;
 	ret.length = cmd_len;
 
@@ -413,18 +416,20 @@ byte_array_info pack_mc_command(byte_array_info* mc_core, byte network_number, b
 
 void extract_actual_bool_data(byte_array_info* response)
 {
-	// λ��ȡ
 	int resp_len = response->length * 2;
 	byte* content = (byte*)malloc(resp_len);
-	memset(content, 0, resp_len);
-
-	for (int i = 0; i < response->length; i++)
+	if (content != NULL)
 	{
-		if ((response->data[i] & 0x10) == 0x10)
-			content[i * 2 + 0] = 0x01;
+		memset(content, 0, resp_len);
 
-		if ((response->data[i] & 0x01) == 0x01)
-			content[i * 2 + 1] = 0x01;
+		for (int i = 0; i < response->length; i++)
+		{
+			if ((response->data[i] & 0x10) == 0x10)
+				content[i * 2 + 0] = 0x01;
+
+			if ((response->data[i] & 0x01) == 0x01)
+				content[i * 2 + 1] = 0x01;
+		}
 	}
 	RELEASE_DATA(response->data);
 	response->data = content;
@@ -436,7 +441,7 @@ mc_error_code_e mc_read_response(int fd, byte_array_info* response, int* read_co
 	if (fd < 0 || read_count == 0 || response == NULL)
 		return MC_ERROR_CODE_INVALID_PARAMETER;
 
-	byte* temp = malloc(BUFFER_SIZE); // ��̬���仺����
+	byte* temp = malloc(BUFFER_SIZE);
 	if (temp == NULL)
 		return MC_ERROR_CODE_MALLOC_FAILED;
 

@@ -32,37 +32,41 @@ byte_array_info build_read_core_command(melsec_mc_address_data address_data, boo
 byte_array_info build_ascii_read_core_command(melsec_mc_address_data address_data, bool is_bit)
 {
 	byte* command = (byte*)malloc(20);
+	int length = 0;
+	if (command != NULL)
+	{
+		command[0] = 0x30;                                    // 批量读取数据命令
+		command[1] = 0x34;
+		command[2] = 0x30;
+		command[3] = 0x31;
+		command[4] = 0x30;                                   // 以点为单位还是字为单位成批读取
+		command[5] = 0x30;
+		command[6] = 0x30;
+		command[7] = is_bit ? (byte)0x31 : (byte)0x30;
+		command[8] = (byte)(address_data.data_type.ascii_code[0]);          // 软元件类型
+		command[9] = (byte)(address_data.data_type.ascii_code[1]);
 
-	command[0] = 0x30;                                    // 批量读取数据命令
-	command[1] = 0x34;
-	command[2] = 0x30;
-	command[3] = 0x31;
-	command[4] = 0x30;                                   // 以点为单位还是字为单位成批读取
-	command[5] = 0x30;
-	command[6] = 0x30;
-	command[7] = is_bit ? (byte)0x31 : (byte)0x30;
-	command[8] = (byte)(address_data.data_type.ascii_code[0]);          // 软元件类型
-	command[9] = (byte)(address_data.data_type.ascii_code[1]);
+		byte_array_info temp = build_bytes_from_address(address_data.address_start, address_data.data_type);
+		command[10] = temp.data[0];            // 起始地址的地位
+		command[11] = temp.data[1];
+		command[12] = temp.data[2];
+		command[13] = temp.data[3];
+		command[14] = temp.data[4];
+		command[15] = temp.data[5];
+		RELEASE_DATA(temp.data);
 
-	byte_array_info temp = build_bytes_from_address(address_data.address_start, address_data.data_type);
-	command[10] = temp.data[0];            // 起始地址的地位
-	command[11] = temp.data[1];
-	command[12] = temp.data[2];
-	command[13] = temp.data[3];
-	command[14] = temp.data[4];
-	command[15] = temp.data[5];
-	RELEASE_DATA(temp.data);
+		temp = build_ascii_bytes_from_ushort(address_data.length);
+		command[16] = temp.data[0];                               // 软元件点数
+		command[17] = temp.data[1];
+		command[18] = temp.data[2];
+		command[19] = temp.data[3];
+		RELEASE_DATA(temp.data);
+		length = 20;
+	}
 
-	temp = build_ascii_bytes_from_ushort(address_data.length);
-	command[16] = temp.data[0];                               // 软元件点数
-	command[17] = temp.data[1];
-	command[18] = temp.data[2];
-	command[19] = temp.data[3];
-	RELEASE_DATA(temp.data);
-
-	byte_array_info ret;
+	byte_array_info ret = { 0 };
 	ret.data = command;
-	ret.length = 20;
+	ret.length = length;
 	return ret;
 }
 
@@ -72,27 +76,33 @@ byte_array_info build_write_word_core_command(melsec_mc_address_data address_dat
 	if (value.data != NULL)
 		val_len = value.length;
 
+	int length = 0;
 	byte* command = (byte*)malloc(10 + val_len);
-	memset(command, 0, 10 + val_len);
-	command[0] = 0x01;											// 批量写入数据命令
-	command[1] = 0x14;
-	command[2] = 0x00;											// 以字为单位成批读取
-	command[3] = 0x00;
-	command[4] = (byte)(address_data.address_start % 256);		// 起始地址的地位
-	command[5] = (byte)(address_data.address_start >> 8);
-	command[6] = (byte)(address_data.address_start >> 16);
-	command[7] = address_data.data_type.data_code;				// 指明写入的数据
-	command[8] = (byte)((val_len >> 1) % 256);					// 软元件长度的地位
-	command[9] = (byte)((val_len >> 1) >> 8);
-	if (value.data != NULL)
+	if (command != NULL)
 	{
-		memcpy(command + 10, value.data, val_len);
-		RELEASE_DATA(value.data);
+		memset(command, 0, 10 + val_len);
+		command[0] = 0x01;											// 批量写入数据命令
+		command[1] = 0x14;
+		command[2] = 0x00;											// 以字为单位成批读取
+		command[3] = 0x00;
+		command[4] = (byte)(address_data.address_start % 256);		// 起始地址的地位
+		command[5] = (byte)(address_data.address_start >> 8);
+		command[6] = (byte)(address_data.address_start >> 16);
+		command[7] = address_data.data_type.data_code;				// 指明写入的数据
+		command[8] = (byte)((val_len >> 1) % 256);					// 软元件长度的地位
+		command[9] = (byte)((val_len >> 1) >> 8);
+		if (value.data != NULL)
+		{
+			memcpy(command + 10, value.data, val_len);
+			RELEASE_DATA(value.data);
+		}
+
+		length = 10 + val_len;
 	}
 
-	byte_array_info ret;
+	byte_array_info ret = { 0 };
 	ret.data = command;
-	ret.length = 10 + val_len;
+	ret.length = length;
 	return ret;
 }
 
@@ -105,41 +115,47 @@ byte_array_info build_ascii_write_word_core_command(melsec_mc_address_data addre
 	if (buffer.data != NULL)
 		val_len = buffer.length;
 
+	int length = 0;
 	byte* command = (byte*)malloc(20 + val_len);
-	command[0] = 0x31;                                  // 批量写入的命令
-	command[1] = 0x34;
-	command[2] = 0x30;
-	command[3] = 0x31;
-	command[4] = 0x30;                                 // 子命令
-	command[5] = 0x30;
-	command[6] = 0x30;
-	command[7] = 0x30;
-	command[8] = (byte)address_data.data_type.ascii_code[0]; // 软元件类型
-	command[9] = (byte)address_data.data_type.ascii_code[1];
+	if (command != NULL)
+	{
+		command[0] = 0x31;                                  // 批量写入的命令
+		command[1] = 0x34;
+		command[2] = 0x30;
+		command[3] = 0x31;
+		command[4] = 0x30;                                 // 子命令
+		command[5] = 0x30;
+		command[6] = 0x30;
+		command[7] = 0x30;
+		command[8] = (byte)address_data.data_type.ascii_code[0]; // 软元件类型
+		command[9] = (byte)address_data.data_type.ascii_code[1];
 
-	byte_array_info temp = build_bytes_from_address(address_data.address_start, address_data.data_type);
-	command[10] = temp.data[0];            // 起始地址的地位
-	command[11] = temp.data[1];
-	command[12] = temp.data[2];
-	command[13] = temp.data[3];
-	command[14] = temp.data[4];
-	command[15] = temp.data[5];
-	RELEASE_DATA(temp.data);
+		byte_array_info temp = build_bytes_from_address(address_data.address_start, address_data.data_type);
+		command[10] = temp.data[0];            // 起始地址的地位
+		command[11] = temp.data[1];
+		command[12] = temp.data[2];
+		command[13] = temp.data[3];
+		command[14] = temp.data[4];
+		command[15] = temp.data[5];
+		RELEASE_DATA(temp.data);
 
-	temp = build_ascii_bytes_from_ushort(address_data.length);
-	command[16] = temp.data[0];                               // 软元件点数
-	command[17] = temp.data[1];
-	command[18] = temp.data[2];
-	command[19] = temp.data[3];
-	RELEASE_DATA(temp.data);
+		temp = build_ascii_bytes_from_ushort(address_data.length);
+		command[16] = temp.data[0];                               // 软元件点数
+		command[17] = temp.data[1];
+		command[18] = temp.data[2];
+		command[19] = temp.data[3];
+		RELEASE_DATA(temp.data);
 
-	if (value.data != NULL)
-		memcpy(command + 20, buffer.data, val_len);
-	RELEASE_DATA(buffer.data);
+		if (buffer.data != NULL)
+			memcpy(command + 20, buffer.data, val_len);
+		RELEASE_DATA(buffer.data);
 
-	byte_array_info ret;
+		length = 20 + val_len;
+	}
+
+	byte_array_info ret = { 0 };
 	ret.data = command;
-	ret.length = 20 + val_len;
+	ret.length = length;
 	return ret;
 }
 
@@ -151,24 +167,29 @@ byte_array_info build_write_bit_core_command(melsec_mc_address_data address_data
 	byte_array_info buffer = trans_bool_array_to_byte_data(value);
 	val_len = buffer.length;
 
+	int length = 0;
 	byte* command = (byte*)malloc(10 + val_len);
-	command[0] = 0x01;                                       // 批量写入数据命令
-	command[1] = 0x14;
-	command[2] = 0x01;                                       // 以位为单位成批写入
-	command[3] = 0x00;
-	command[4] = (byte)(address_data.address_start % 256);   // 起始地址的地位
-	command[5] = (byte)(address_data.address_start >> 8);
-	command[6] = (byte)(address_data.address_start >> 16);
-	command[7] = address_data.data_type.data_code;            // 指明读取的数据
-	command[8] = (byte)(address_data.length % 256);           // 软元件的长度
-	command[9] = (byte)(address_data.length >> 8);
+	if (command != NULL)
+	{
+		command[0] = 0x01;                                       // 批量写入数据命令
+		command[1] = 0x14;
+		command[2] = 0x01;                                       // 以位为单位成批写入
+		command[3] = 0x00;
+		command[4] = (byte)(address_data.address_start % 256);   // 起始地址的地位
+		command[5] = (byte)(address_data.address_start >> 8);
+		command[6] = (byte)(address_data.address_start >> 16);
+		command[7] = address_data.data_type.data_code;            // 指明读取的数据
+		command[8] = (byte)(address_data.length % 256);           // 软元件的长度
+		command[9] = (byte)(address_data.length >> 8);
 
-	memcpy(command + 10, buffer.data, val_len);
-	RELEASE_DATA(buffer.data);
+		memcpy(command + 10, buffer.data, val_len);
+		RELEASE_DATA(buffer.data);
+		length = 10 + val_len;
+	}
 
-	byte_array_info ret;
+	byte_array_info ret = { 0 };
 	ret.data = command;
-	ret.length = 10 + val_len;
+	ret.length = length;
 	return ret;
 }
 
@@ -181,41 +202,47 @@ byte_array_info build_ascii_write_bit_core_command(melsec_mc_address_data addres
 	if (buffer.data != NULL)
 		val_len = buffer.length;
 
+	int length = 0;
 	byte* command = (byte*)malloc(20 + val_len);
-	command[0] = 0x31;                                                                              // 批量写入的命令
-	command[1] = 0x34;
-	command[2] = 0x30;
-	command[3] = 0x31;
-	command[4] = 0x30;                                                                              // 子命令
-	command[5] = 0x30;
-	command[6] = 0x30;
-	command[7] = 0x31;
-	command[8] = (byte)address_data.data_type.ascii_code[0]; // 软元件类型
-	command[9] = (byte)address_data.data_type.ascii_code[1];
-	byte_array_info temp = build_bytes_from_address(address_data.address_start, address_data.data_type);
-	command[10] = temp.data[0];            // 起始地址的地位
-	command[11] = temp.data[1];
-	command[12] = temp.data[2];
-	command[13] = temp.data[3];
-	command[14] = temp.data[4];
-	command[15] = temp.data[5];
-	RELEASE_DATA(temp.data);
+	if (command != NULL)
+	{
+		command[0] = 0x31;                                                                              // 批量写入的命令
+		command[1] = 0x34;
+		command[2] = 0x30;
+		command[3] = 0x31;
+		command[4] = 0x30;                                                                              // 子命令
+		command[5] = 0x30;
+		command[6] = 0x30;
+		command[7] = 0x31;
+		command[8] = (byte)address_data.data_type.ascii_code[0]; // 软元件类型
+		command[9] = (byte)address_data.data_type.ascii_code[1];
+		byte_array_info temp = build_bytes_from_address(address_data.address_start, address_data.data_type);
+		command[10] = temp.data[0];            // 起始地址的地位
+		command[11] = temp.data[1];
+		command[12] = temp.data[2];
+		command[13] = temp.data[3];
+		command[14] = temp.data[4];
+		command[15] = temp.data[5];
+		RELEASE_DATA(temp.data);
 
-	temp = build_ascii_bytes_from_ushort(address_data.length);
-	command[16] = temp.data[0];                               // 软元件点数
-	command[17] = temp.data[1];
-	command[18] = temp.data[2];
-	command[19] = temp.data[3];
-	RELEASE_DATA(temp.data);
+		temp = build_ascii_bytes_from_ushort(address_data.length);
+		command[16] = temp.data[0];                               // 软元件点数
+		command[17] = temp.data[1];
+		command[18] = temp.data[2];
+		command[19] = temp.data[3];
+		RELEASE_DATA(temp.data);
 
-	if (value.data != NULL)
-		memcpy(command + 20, buffer.data, val_len);
+		if (buffer.data != NULL)
+			memcpy(command + 20, buffer.data, val_len);
 
-	RELEASE_DATA(buffer.data);
+		RELEASE_DATA(buffer.data);
+
+		length = 20 + val_len;
+	}
 
 	byte_array_info ret;
 	ret.data = command;
-	ret.length = 20 + val_len;
+	ret.length = length;
 	return ret;
 }
 
@@ -241,15 +268,18 @@ byte_array_info build_ascii_bytes_from_ushort(unsigned short data)
 	char hex_str[] = "0123456789ABCDEF";
 
 	out = (byte*)malloc(length * 2 + 1);
-	memset((void*)out, 0, length * 2 + 1);
+	if (out != NULL)
+	{
+		memset((void*)out, 0, length * 2 + 1);
 
-	byte temp[2];
-	temp[0] = (byte)(0xff & data);
-	temp[1] = (byte)(0xff & (data >> 8));
+		byte temp[2] = { 0 };
+		temp[0] = (byte)(0xff & data);
+		temp[1] = (byte)(0xff & (data >> 8));
 
-	for (int i = 0; i < length; i++) {
-		(out)[i * 2 + 0] = hex_str[(temp[i] >> 4) & 0x0F];
-		(out)[i * 2 + 1] = hex_str[(temp[i]) & 0x0F];
+		for (int i = 0; i < length; i++) {
+			(out)[i * 2 + 0] = hex_str[(temp[i] >> 4) & 0x0F];
+			(out)[i * 2 + 1] = hex_str[(temp[i]) & 0x0F];
+		}
 	}
 	byte_array_info ret;
 	ret.data = out;
@@ -265,20 +295,23 @@ byte_array_info build_ascii_bytes_from_int(int data)
 	char hex_str[] = "0123456789ABCDEF";
 
 	out = (byte*)malloc(length * 2 + 1);
-	memset((void*)out, 0, length * 2 + 1);
+	if (out != NULL)
+	{
+		memset((void*)out, 0, length * 2 + 1);
 
-	byte temp[4];
-	temp[0] = (byte)(0xff & data);
-	temp[1] = (byte)(0xff & (data >> 8));
-	temp[2] = (byte)(0xff & (data >> 16));
-	temp[3] = (byte)(0xff & (data >> 24));
+		byte temp[4] = { 0 };
+		temp[0] = (byte)(0xff & data);
+		temp[1] = (byte)(0xff & (data >> 8));
+		temp[2] = (byte)(0xff & (data >> 16));
+		temp[3] = (byte)(0xff & (data >> 24));
 
-	for (int i = 0; i < length; i++) {
-		(out)[i * 2 + 0] = hex_str[(temp[i] >> 4) & 0x0F];
-		(out)[i * 2 + 1] = hex_str[(temp[i]) & 0x0F];
+		for (int i = 0; i < length; i++) {
+			(out)[i * 2 + 0] = hex_str[(temp[i] >> 4) & 0x0F];
+			(out)[i * 2 + 1] = hex_str[(temp[i]) & 0x0F];
+		}
 	}
 
-	byte_array_info ret;
+	byte_array_info ret = { 0 };
 	ret.data = out;
 	ret.length = 8;
 	return ret;
@@ -299,7 +332,7 @@ byte_array_info build_ascii_bytes_from_byte_array(const byte* data, int length)
 			(out)[i * 2 + 1] = hex_str[(data[i]) & 0x0F];
 		}
 	}
-	byte_array_info ret;
+	byte_array_info ret = { 0 };
 	ret.data = out;
 	ret.length = length * 2;
 	return ret;
@@ -317,7 +350,7 @@ byte_array_info build_ascii_bytes_from_bool_array(const bool* value, int length)
 		}
 	}
 
-	byte_array_info ret;
+	byte_array_info ret = { 0 };
 	ret.data = out;
 	ret.length = length;
 	return ret;
@@ -331,21 +364,23 @@ byte_array_info trans_bool_array_to_byte_data(bool_array_info value)
 	{
 		length = (value.length + 1) / 2;
 		out = (byte*)malloc(length);
-		memset(out, 0, length);
-
-		for (int i = 0; i < length; i++)
+		if (out != NULL)
 		{
-			if (value.data[i * 2 + 0])
-				out[i] += 0x10;
-
-			if ((i * 2 + 1) < length)
+			memset(out, 0, length);
+			for (int i = 0; i < length; i++)
 			{
-				if (value.data[i * 2 + 1])
-					out[i] += 0x01;
+				if (value.data[i * 2 + 0])
+					out[i] += 0x10;
+
+				if ((i * 2 + 1) < length)
+				{
+					if (value.data[i * 2 + 1])
+						out[i] += 0x01;
+				}
 			}
 		}
 	}
-	byte_array_info ret;
+	byte_array_info ret = { 0 };
 	ret.data = out;
 	ret.length = length;
 	return ret;
