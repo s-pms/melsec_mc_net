@@ -1,5 +1,7 @@
 #ifdef _WIN32
 #include <WinSock2.h>
+#else
+#include <unistd.h>
 #endif
 #include <stdio.h>
 #include <stdlib.h>
@@ -281,7 +283,7 @@ int main(int argc, char** argv)
 #ifdef _WIN32
 		Sleep(TEST_SLEEP_TIME);
 #else
-		usleep(TEST_SLEEP_TIME * 1000);
+		sleep(TEST_SLEEP_TIME);
 #endif
 	}
 
