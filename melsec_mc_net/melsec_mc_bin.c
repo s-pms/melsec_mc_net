@@ -624,7 +624,7 @@ mc_error_code_e mc_read_string(int fd, const char* address, int length, char** v
 	byte_array_info read_data;
 	memset(&read_data, 0, sizeof(read_data));
 	int read_len = (length % 2) == 1 ? length + 1 : length;
-	ret = read_word_value(fd, address, length / 2, &read_data);
+	ret = read_word_value(fd, address, read_len / 2, &read_data);
 	if (ret == MC_ERROR_CODE_SUCCESS && read_data.length >= read_len)
 	{
 		char* ret_str = (char*)malloc(read_len);
