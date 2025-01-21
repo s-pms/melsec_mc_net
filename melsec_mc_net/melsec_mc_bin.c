@@ -17,6 +17,7 @@
 #include <sys/socket.h>
 #endif
 
+// Connect to PLC
 int mc_connect(char* ip_addr, int port, byte network_addr, byte station_addr)
 {
 	int fd = -1;
@@ -27,6 +28,7 @@ int mc_connect(char* ip_addr, int port, byte network_addr, byte station_addr)
 	return fd;
 }
 
+// Disconnect from PLC
 bool mc_disconnect(int fd)
 {
 	mc_close_tcp_socket(fd);
@@ -34,6 +36,7 @@ bool mc_disconnect(int fd)
 }
 
 //////////////////////////////////////////////////////////////////////////
+// Read boolean array values
 mc_error_code_e read_bool_value(int fd, const char* address, int length, byte_array_info* out_bytes)
 {
 	mc_error_code_e ret = MC_ERROR_CODE_FAILED;
@@ -77,6 +80,7 @@ mc_error_code_e read_bool_value(int fd, const char* address, int length, byte_ar
 	return ret;
 }
 
+// Read word data
 mc_error_code_e read_word_value(int fd, const char* address, int length, byte_array_info* out_bytes)
 {
 	melsec_mc_address_data address_data;
@@ -87,6 +91,7 @@ mc_error_code_e read_word_value(int fd, const char* address, int length, byte_ar
 	return read_address_data(fd, address_data, out_bytes);
 }
 
+// Read data from specified address
 mc_error_code_e read_address_data(int fd, melsec_mc_address_data address_data, byte_array_info* out_bytes)
 {
 	mc_error_code_e ret = MC_ERROR_CODE_FAILED;
@@ -125,6 +130,7 @@ mc_error_code_e read_address_data(int fd, melsec_mc_address_data address_data, b
 }
 
 //////////////////////////////////////////////////////////////////////////
+// Write boolean array values
 mc_error_code_e write_bool_value(int fd, const char* address, int length, bool_array_info in_bytes)
 {
 	mc_error_code_e ret = MC_ERROR_CODE_FAILED;
@@ -166,6 +172,7 @@ mc_error_code_e write_bool_value(int fd, const char* address, int length, bool_a
 	return ret;
 }
 
+// Write word data
 mc_error_code_e write_word_value(int fd, const char* address, int length, byte_array_info in_bytes)
 {
 	melsec_mc_address_data address_data;
@@ -384,6 +391,7 @@ mc_error_code_e mc_read_plc_type(int fd, char** type)
 	return ret;
 }
 
+// Pack MC protocol command
 byte_array_info pack_mc_command(byte_array_info* mc_core, byte network_number, byte station_number)
 {
 	int core_len = mc_core->length;
@@ -414,6 +422,7 @@ byte_array_info pack_mc_command(byte_array_info* mc_core, byte network_number, b
 	return ret;
 }
 
+// Extract actual boolean data
 void extract_actual_bool_data(byte_array_info* response)
 {
 	int resp_len = response->length * 2;
@@ -436,6 +445,7 @@ void extract_actual_bool_data(byte_array_info* response)
 	response->length = resp_len;
 }
 
+// Read PLC response
 mc_error_code_e mc_read_response(int fd, byte_array_info* response, int* read_count)
 {
 	if (fd < 0 || read_count == 0 || response == NULL)
