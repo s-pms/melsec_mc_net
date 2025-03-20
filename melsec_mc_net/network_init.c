@@ -11,12 +11,12 @@ static int g_network_initialized = 0;
 mc_error_code_e mc_network_init(void) {
 #ifdef _WIN32
 	if (g_network_initialized) {
-		return MC_ERROR_CODE_SUCCESS; // 已经初始化过
+		return MC_ERROR_CODE_SUCCESS; // Already initialized
 	}
 
 	WSADATA wsa;
 	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
-		mc_log_error(MC_ERROR_CODE_FAILED, "初始化Winsock库失败");
+		mc_log_error(MC_ERROR_CODE_FAILED, "Failed to initialize Winsock library");
 		return MC_ERROR_CODE_FAILED;
 	}
 
@@ -28,11 +28,11 @@ mc_error_code_e mc_network_init(void) {
 mc_error_code_e mc_network_cleanup(void) {
 #ifdef _WIN32
 	if (!g_network_initialized) {
-		return MC_ERROR_CODE_SUCCESS; // 未初始化，无需清理
+		return MC_ERROR_CODE_SUCCESS; // Not initialized, no need to clean up
 	}
 
 	if (WSACleanup() != 0) {
-		mc_log_error(MC_ERROR_CODE_FAILED, "清理Winsock库失败");
+		mc_log_error(MC_ERROR_CODE_FAILED, "Failed to clean up Winsock library");
 		return MC_ERROR_CODE_FAILED;
 	}
 

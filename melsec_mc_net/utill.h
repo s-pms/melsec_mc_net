@@ -4,18 +4,18 @@
 #include "typedef.h"
 
 typedef struct _tag_plc_network_address {
-	byte network_number; // 网络号，通常为0;依据PLC的配置而配置
-	byte station_number; // 网络站号，通常为0;依据PLC的配置而配置
+	byte network_number; // Network number, usually 0; configured according to PLC configuration
+	byte station_number; // Network station number, usually 0; configured according to PLC configuration
 } plc_network_address;
 
 typedef struct _tag_byte_array_info {
-	byte* data; // 内容
-	int length; // 长度
+	byte* data; // Content
+	int length; // Length
 } byte_array_info;
 
 typedef struct _tag_bool_array_info {
 	bool* data; // 内容
-	int length; // 长度
+	int length; // Length
 } bool_array_info;
 
 void short2bytes(short i, byte* bytes);

@@ -17,9 +17,9 @@ byte_array_info  build_ascii_bytes_from_bool_array(const bool* value, int length
 
 byte_array_info  trans_bool_array_to_byte_data(bool_array_info value);
 
-// 计算Fx协议指令的和校验信息
+// Calculate checksum information for Fx protocol commands
 byte_array_info  calculate_CRC(byte_array_info  data);
-// 检查指定的和校验是否是正确的
+// Check if the specified checksum is correct
 bool check_CRC(byte_array_info  data);
 
 //

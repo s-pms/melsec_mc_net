@@ -18,10 +18,10 @@ mc_error_code_e write_address_data(int fd, melsec_mc_address_data address_data, 
 
 //////////////////////////////////////////////////////////////////////////
 
-//将MC协议的核心报文打包成一个可以直接对PLC进行发送的原始报文
+//Package the MC protocol core message into a raw message that can be sent directly to the PLC
 byte_array_info pack_mc_command(byte_array_info* mc_core, byte network_number, byte station_number);
 
-//从PLC反馈的数据中提取出实际的数据内容，需要传入反馈数据，是否位读取
+//Extract the actual data content from the PLC feedback data, requires passing in feedback data, whether it is bit reading
 void extract_actual_bool_data(byte_array_info* response);
 
 #endif//__H_MELSEC_MC_BIN_PRIVATE_H__

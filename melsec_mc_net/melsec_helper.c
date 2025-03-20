@@ -6,26 +6,26 @@
 #include "error_handler.h"
 #include "thread_safe.h"
 
-// 从三菱地址，是否位读取进行创建读取的MC的核心报文
-// is_bit 是否进行了位读取操作
+// Create MC core message for reading from Mitsubishi address
+// is_bit indicates whether it's a bit read operation
 byte_array_info build_read_core_command(melsec_mc_address_data address_data, bool is_bit)
 {
 	byte_array_info ret = { 0 };
 	byte* command = (byte*)malloc(10);
 	if (command == NULL) {
-		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "创建读取核心报文内存分配失败");
+		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "Failed to allocate memory for read core message");
 		return ret;
 	}
 
-	command[0] = 0x01;                                                      // 批量读取数据命令
+	command[0] = 0x01;                                                      // Batch read data command
 	command[1] = 0x04;
-	command[2] = is_bit ? (byte)0x01 : (byte)0x00;                           // 以点为单位还是字为单位成批读取
+	command[2] = is_bit ? (byte)0x01 : (byte)0x00;                           // Read in units of points or words
 	command[3] = 0x00;
-	command[4] = (byte)(address_data.address_start % 256);				// 起始地址的地位
+	command[4] = (byte)(address_data.address_start % 256);				// Low byte of start address
 	command[5] = (byte)(address_data.address_start >> 8);
 	command[6] = (byte)(address_data.address_start >> 16);
-	command[7] = address_data.data_type.data_code;                           // 指明读取的数据
-	command[8] = (byte)(address_data.length % 256);                          // 软元件的长度
+	command[7] = address_data.data_type.data_code;                           // Specify the data to read
+	command[8] = (byte)(address_data.length % 256);                          // Length of device points
 	command[9] = (byte)(address_data.length >> 8);
 
 	ret.data = command;
@@ -33,15 +33,15 @@ byte_array_info build_read_core_command(melsec_mc_address_data address_data, boo
 	return ret;
 }
 
-// 从三菱地址，是否位读取进行创建读取Ascii格式的MC的核心报文
-// 是否进行了位读取操作
+// Create ASCII format MC core message for reading from Mitsubishi address
+// Whether it's a bit read operation
 byte_array_info build_ascii_read_core_command(melsec_mc_address_data address_data, bool is_bit)
 {
 	byte_array_info ret = { 0 };
 	byte* command = (byte*)malloc(20);
 	if (command == NULL)
 	{
-		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "创建ASCII读取核心报文内存分配失败");
+		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "Failed to allocate memory for ASCII read core message");
 		return ret;
 	}
 

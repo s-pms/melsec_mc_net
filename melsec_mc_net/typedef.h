@@ -18,17 +18,17 @@ typedef unsigned long long uint64;
 #define RELEASE_DATA(addr) { if(addr != NULL) { free(addr);} }
 
 typedef enum _tag_mc_error_code {
-	MC_ERROR_CODE_SUCCESS = 0, // 成功
-	MC_ERROR_CODE_FAILED = 1, // 错误
-	MC_ERROR_CODE_MALLOC_FAILED = 2, // 内存分配错误
-	MC_ERROR_CODE_INVALID_PARAMETER = 3, // 参数错误
-	MC_ERROR_CODE_PARSE_ADDRESS_FAILED, // 地址解析错误
-	MC_ERROR_CODE_BUILD_CORE_CMD_FAILED, // 构建核心命令错误
-	MC_ERROR_CODE_SOCKET_SEND_FAILED, // 发送命令错误
-	MC_ERROR_CODE_SOCKET_RECV_FAILED, // 接收命令错误
-	MC_ERROR_CODE_RESPONSE_HEADER_FAILED, // 响应包头不完整错误
-	MC_ERROR_CODE_CONNECTION_CLOSED,	// 连接已关闭
-	MC_ERROR_CODE_UNKOWN = 99, // 未知错误
+	MC_ERROR_CODE_SUCCESS = 0, // Success
+	MC_ERROR_CODE_FAILED = 1, // Error
+	MC_ERROR_CODE_MALLOC_FAILED = 2, // Memory allocation error
+	MC_ERROR_CODE_INVALID_PARAMETER = 3, // Parameter error
+	MC_ERROR_CODE_PARSE_ADDRESS_FAILED, // Address parsing error
+	MC_ERROR_CODE_BUILD_CORE_CMD_FAILED, // Core command building error
+	MC_ERROR_CODE_SOCKET_SEND_FAILED, // Command sending error
+	MC_ERROR_CODE_SOCKET_RECV_FAILED, // Command receiving error
+	MC_ERROR_CODE_RESPONSE_HEADER_FAILED, // Incomplete response header error
+	MC_ERROR_CODE_CONNECTION_CLOSED,	// Connection closed
+	MC_ERROR_CODE_UNKOWN = 99, // Unknown error
 } mc_error_code_e;
 
 #endif // !__H_TYPEDEF_H__

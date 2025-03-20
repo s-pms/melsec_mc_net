@@ -27,7 +27,7 @@ bool mc_analysis_address(const char* address, int length, melsec_mc_address_data
 	switch (address[0]) {
 	case 'M':
 	case 'm': {
-		// M中间继电器
+		// M intermediate relay
 		out_address_data->data_type = mc_create_data_type(0x90, 0x01, "M*", 10);
 		const char* real_addr = address + 1;
 		out_address_data->address_start = mc_convert_string_to_int(real_addr, out_address_data->data_type.from_base);
@@ -35,7 +35,7 @@ bool mc_analysis_address(const char* address, int length, melsec_mc_address_data
 	}
 	case 'X':
 	case 'x': {
-		// X输入继电器
+		// X input relay
 		out_address_data->data_type = mc_create_data_type(0x9C, 0x01, "X*", 16);
 		const char* real_addr = address + 1;
 		out_address_data->address_start = mc_convert_string_to_int(real_addr, out_address_data->data_type.from_base);
@@ -43,7 +43,7 @@ bool mc_analysis_address(const char* address, int length, melsec_mc_address_data
 	}
 	case 'Y':
 	case 'y': {
-		// Y输出继电器
+		// Y output relay
 		out_address_data->data_type = mc_create_data_type(0x9D, 0x01, "Y*", 16);
 		const char* real_addr = address + 1;
 		out_address_data->address_start = mc_convert_string_to_int(real_addr, out_address_data->data_type.from_base);
@@ -51,7 +51,7 @@ bool mc_analysis_address(const char* address, int length, melsec_mc_address_data
 	}
 	case 'D':
 	case 'd': {
-		// D数据寄存器
+		// D data register
 		out_address_data->data_type = mc_create_data_type(0xA8, 0x01, "D*", 10);
 		const char* real_addr = address + 1;
 		out_address_data->address_start = mc_convert_string_to_int(real_addr, out_address_data->data_type.from_base);
@@ -59,7 +59,7 @@ bool mc_analysis_address(const char* address, int length, melsec_mc_address_data
 	}
 	case 'W':
 	case 'w': {
-		// W链接寄存器
+		// W link register
 		out_address_data->data_type = mc_create_data_type(0xB4, 0x00, "W*", 16);
 		const char* real_addr = address + 1;
 		out_address_data->address_start = mc_convert_string_to_int(real_addr, out_address_data->data_type.from_base);
@@ -67,7 +67,7 @@ bool mc_analysis_address(const char* address, int length, melsec_mc_address_data
 	}
 	case 'L':
 	case 'l': {
-		// L锁存继电器
+		// L latch relay
 		out_address_data->data_type = mc_create_data_type(0x92, 0x01, "L*", 10);
 		const char* real_addr = address + 1;
 		out_address_data->address_start = mc_convert_string_to_int(real_addr, out_address_data->data_type.from_base);
@@ -75,7 +75,7 @@ bool mc_analysis_address(const char* address, int length, melsec_mc_address_data
 	}
 	case 'F':
 	case 'f': {
-		// F报警器
+		// F annunciator
 		out_address_data->data_type = mc_create_data_type(0x93, 0x01, "F*", 10);
 		const char* real_addr = address + 1;
 		out_address_data->address_start = mc_convert_string_to_int(real_addr, out_address_data->data_type.from_base);
@@ -83,7 +83,7 @@ bool mc_analysis_address(const char* address, int length, melsec_mc_address_data
 	}
 	case 'V':
 	case 'v': {
-		// V边沿继电器
+		// V edge relay
 		out_address_data->data_type = mc_create_data_type(0x94, 0x01, "V*", 10);
 		const char* real_addr = address + 1;
 		out_address_data->address_start = mc_convert_string_to_int(real_addr, out_address_data->data_type.from_base);
@@ -91,7 +91,7 @@ bool mc_analysis_address(const char* address, int length, melsec_mc_address_data
 	}
 	case 'B':
 	case 'b': {
-		// B链接继电器
+		// B link relay
 		out_address_data->data_type = mc_create_data_type(0xA0, 0x01, "B*", 16);
 		const char* real_addr = address + 1;
 		out_address_data->address_start = mc_convert_string_to_int(real_addr, out_address_data->data_type.from_base);
@@ -99,7 +99,7 @@ bool mc_analysis_address(const char* address, int length, melsec_mc_address_data
 	}
 	case 'R':
 	case 'r': {
-		// R文件寄存器
+		// R file register
 		out_address_data->data_type = mc_create_data_type(0xAF, 0x01, "R*", 10);
 		const char* real_addr = address + 1;
 		out_address_data->address_start = mc_convert_string_to_int(real_addr, out_address_data->data_type.from_base);
@@ -109,22 +109,22 @@ bool mc_analysis_address(const char* address, int length, melsec_mc_address_data
 	case 's': {
 		const char* real_addr = address + 1;
 		if (address[1] == 'N' || address[1] == 'n') {
-			// 累计定时器的当前值
+			// Current value of accumulative timer
 			out_address_data->data_type = mc_create_data_type(0xC8, 0x00, "SN", 100);
 			real_addr = address + 2;
 		}
 		else if (address[1] == 'S' || address[1] == 's') {
-			// 累计定时器的触点
+			// Contact of accumulative timer
 			out_address_data->data_type = mc_create_data_type(0xC7, 0x01, "SS", 10);
 			real_addr = address + 2;
 		}
 		else if (address[1] == 'C' || address[1] == 'c') {
-			// 累计定时器的线圈
+			// Coil of accumulative timer
 			out_address_data->data_type = mc_create_data_type(0xC6, 0x01, "SC", 10);
 			real_addr = address + 2;
 		}
 		else {
-			// S步进继电器
+			// S step relay
 			out_address_data->data_type = mc_create_data_type(0x98, 0x01, "S*", 10);
 		}
 
@@ -135,12 +135,12 @@ bool mc_analysis_address(const char* address, int length, melsec_mc_address_data
 	case 'z': {
 		const char* real_addr = address + 1;
 		if (address[1] == 'R' || address[1] == 'r') {
-			// 文件寄存器ZR区
+			// ZR file register area
 			out_address_data->data_type = mc_create_data_type(0xB0, 0x00, "ZR", 16);
 			real_addr = address + 2;
 		}
 		else {
-			// 变址寄存器
+			// Index register
 			out_address_data->data_type = mc_create_data_type(0xCC, 0x00, "Z*", 10);
 		}
 
@@ -151,15 +151,15 @@ bool mc_analysis_address(const char* address, int length, melsec_mc_address_data
 	case 't': {
 		const char* real_addr = address + 2;
 		if (address[1] == 'C' || address[1] == 'c') {
-			// 定时器的线圈
+			// Timer coil
 			out_address_data->data_type = mc_create_data_type(0xC0, 0x01, "TC", 10);
 		}
 		else if (address[1] == 'S' || address[1] == 's') {
-			// 定时器的触点
+			// Timer contact
 			out_address_data->data_type = mc_create_data_type(0xC1, 0x01, "TS", 10);
 		}
 		else if (address[1] == 'N' || address[1] == 'n') {
-			// 定时器的当前值
+			// Timer current value
 			out_address_data->data_type = mc_create_data_type(0xC2, 0x01, "TN", 10);
 		}
 
@@ -170,15 +170,15 @@ bool mc_analysis_address(const char* address, int length, melsec_mc_address_data
 	case 'c': {
 		const char* real_addr = address + 2;
 		if (address[1] == 'N' || address[1] == 'n') {
-			// 计数器的当前值
+			// Counter current value
 			out_address_data->data_type = mc_create_data_type(0xC5, 0x01, "CN", 10);
 		}
 		else if (address[1] == 'S' || address[1] == 's') {
-			// 计数器的触点
+			// Counter contact
 			out_address_data->data_type = mc_create_data_type(0xC4, 0x01, "CS", 10);
 		}
 		else if (address[1] == 'C' || address[1] == 'c') {
-			// 计数器的线圈
+			// Counter coil
 			out_address_data->data_type = mc_create_data_type(0xC3, 0x01, "CC", 10);
 		}
 

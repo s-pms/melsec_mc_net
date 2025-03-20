@@ -16,29 +16,29 @@
 #include <unistd.h>
 #endif
 
-// 默认通信配置
+// Default communication configuration
 mc_comm_config_t default_comm_config = {
-	.send_timeout_ms = 5000,    // 默认发送超时5秒
-	.recv_timeout_ms = 5000,    // 默认接收超时5秒
-	.retry_count = 3,           // 默认重试3次
-	.retry_interval_ms = 500    // 默认重试间隔500毫秒
+	.send_timeout_ms = 5000,    // Default send timeout 5 seconds
+	.recv_timeout_ms = 5000,    // Default receive timeout 5 seconds
+	.retry_count = 3,           // Default retry 3 times
+	.retry_interval_ms = 500    // Default retry interval 500 milliseconds
 };
 
-// 存储每个连接的配置信息
+// Store configuration information for each connection
 #define MAX_CONNECTIONS 32
 static struct {
-	int fd;                    // 连接描述符
-	mc_comm_config_t config;    // 连接配置
-	bool in_use;                // 是否在使用
+	int fd;                    // Connection descriptor
+	mc_comm_config_t config;    // Connection configuration
+	bool in_use;                // Whether it is in use
 } connection_configs[MAX_CONNECTIONS] = { 0 };
 
 int mc_write_msg(int fd, void* buf, int nbytes) {
 	if (fd <= 0 || buf == NULL || nbytes <= 0) {
-		mc_log_error(MC_ERROR_CODE_INVALID_PARAMETER, "发送消息参数错误");
+		mc_log_error(MC_ERROR_CODE_INVALID_PARAMETER, "Send message parameter error");
 		return -1;
 	}
 
-	// 加锁保护
+	// Lock protection
 	mc_mutex_lock(&g_connection_mutex);
 
 	int nleft, nwritten;
@@ -52,7 +52,7 @@ int mc_write_msg(int fd, void* buf, int nbytes) {
 			if (WSAGetLastError() == WSAEINTR)
 				continue;
 			else {
-				mc_log_error(MC_ERROR_CODE_SOCKET_SEND_FAILED, "发送消息失败");
+				mc_log_error(MC_ERROR_CODE_SOCKET_SEND_FAILED, "Failed to send message");
 				mc_mutex_unlock(&g_connection_mutex);
 				return -1;
 			}
@@ -60,7 +60,7 @@ int mc_write_msg(int fd, void* buf, int nbytes) {
 			if (errno == EINTR)
 				continue;
 			else {
-				mc_log_error(MC_ERROR_CODE_SOCKET_SEND_FAILED, "发送消息失败");
+				mc_log_error(MC_ERROR_CODE_SOCKET_SEND_FAILED, "Failed to send message");
 				mc_mutex_unlock(&g_connection_mutex);
 				return -1;
 			}
@@ -72,18 +72,18 @@ int mc_write_msg(int fd, void* buf, int nbytes) {
 		}
 	}
 
-	// 解锁
+	// Unlock
 	mc_mutex_unlock(&g_connection_mutex);
 	return (nbytes - nleft);
 }
 
 int mc_read_msg(int fd, void* buf, int nbytes) {
 	if (fd <= 0 || buf == NULL || nbytes <= 0) {
-		mc_log_error(MC_ERROR_CODE_INVALID_PARAMETER, "接收消息参数错误");
+		mc_log_error(MC_ERROR_CODE_INVALID_PARAMETER, "Receive message parameter error");
 		return -1;
 	}
 
-	// 加锁保护
+	// Lock protection
 	mc_mutex_lock(&g_connection_mutex);
 
 	int nleft, nread;
@@ -93,7 +93,7 @@ int mc_read_msg(int fd, void* buf, int nbytes) {
 	while (nleft > 0) {
 		nread = (int)recv(fd, ptr, nleft, 0);
 		if (nread == 0) {
-			mc_log_error(MC_ERROR_CODE_FAILED, "连接已关闭");
+			mc_log_error(MC_ERROR_CODE_FAILED, "Connection closed");
 			break;
 		}
 		else if (nread < 0) {
@@ -102,7 +102,7 @@ int mc_read_msg(int fd, void* buf, int nbytes) {
 				continue;
 			}
 			else {
-				mc_log_error(MC_ERROR_CODE_FAILED, "接收消息失败");
+				mc_log_error(MC_ERROR_CODE_FAILED, "Failed to receive message");
 				mc_mutex_unlock(&g_connection_mutex);
 				return -1;
 			}
@@ -111,7 +111,7 @@ int mc_read_msg(int fd, void* buf, int nbytes) {
 				continue;
 			}
 			else {
-				mc_log_error(MC_ERROR_CODE_FAILED, "接收消息失败");
+				mc_log_error(MC_ERROR_CODE_FAILED, "Failed to receive message");
 				mc_mutex_unlock(&g_connection_mutex);
 				return -1;
 			}
@@ -123,14 +123,14 @@ int mc_read_msg(int fd, void* buf, int nbytes) {
 		}
 	}
 
-	// 解锁
+	// Unlock
 	mc_mutex_unlock(&g_connection_mutex);
 	return (nbytes - nleft);
 }
 
 int mc_open_tcp_client_socket_with_config2(char* destIp, short destPort, mc_comm_config_t config) {
 	if (destIp == NULL || destPort <= 0) {
-		mc_log_error(MC_ERROR_CODE_INVALID_PARAMETER, "创建TCP连接参数错误");
+		mc_log_error(MC_ERROR_CODE_INVALID_PARAMETER, "TCP connection parameter error");
 		return -1;
 	}
 
@@ -141,7 +141,7 @@ int mc_open_tcp_client_socket_with_config2(char* destIp, short destPort, mc_comm
 	sockFd = (int)socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
 
 	if (sockFd < 0) {
-		mc_log_error(MC_ERROR_CODE_FAILED, "创建套接字失败");
+		mc_log_error(MC_ERROR_CODE_FAILED, "Failed to create socket");
 		return -1;
 #pragma warning(disable:4996)
 	}
@@ -154,24 +154,24 @@ int mc_open_tcp_client_socket_with_config2(char* destIp, short destPort, mc_comm
 	ret = connect(sockFd, (struct sockaddr*)&serverAddr, sizeof(serverAddr));
 
 	if (ret != 0) {
-		mc_log_error(MC_ERROR_CODE_FAILED, "连接服务器失败");
+		mc_log_error(MC_ERROR_CODE_FAILED, "Failed to connect to server");
 		mc_close_tcp_socket(sockFd);
 		return -1;
 	}
 
-	// 设置套接字选项
+	// Set socket options
 #ifdef _WIN32
 	int send_timeout = config.send_timeout_ms;
 	int recv_timeout = config.recv_timeout_ms;
 
 	ret = setsockopt(sockFd, SOL_SOCKET, SO_SNDTIMEO, (const char*)&send_timeout, sizeof(send_timeout));
 	if (ret != 0) {
-		mc_log_error(MC_ERROR_CODE_FAILED, "设置发送超时失败");
+		mc_log_error(MC_ERROR_CODE_FAILED, "Failed to set send timeout");
 	}
 
 	ret = setsockopt(sockFd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&recv_timeout, sizeof(recv_timeout));
 	if (ret != 0) {
-		mc_log_error(MC_ERROR_CODE_FAILED, "设置接收超时失败");
+		mc_log_error(MC_ERROR_CODE_FAILED, "Failed to set receive timeout");
 	}
 #else
 	struct timeval send_timeout = { config.send_timeout_ms / 1000, (config.send_timeout_ms % 1000) * 1000 };
@@ -179,23 +179,23 @@ int mc_open_tcp_client_socket_with_config2(char* destIp, short destPort, mc_comm
 
 	ret = setsockopt(sockFd, SOL_SOCKET, SO_SNDTIMEO, (const char*)&send_timeout, sizeof(send_timeout));
 	if (ret != 0) {
-		mc_log_error(MC_ERROR_CODE_FAILED, "设置发送超时失败");
+		mc_log_error(MC_ERROR_CODE_FAILED, "Failed to set send timeout");
 	}
 
 	ret = setsockopt(sockFd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&recv_timeout, sizeof(recv_timeout));
 	if (ret != 0) {
-		mc_log_error(MC_ERROR_CODE_FAILED, "设置接收超时失败");
+		mc_log_error(MC_ERROR_CODE_FAILED, "Failed to set receive timeout");
 	}
 #endif
 
-	// 保存连接配置
+	// Save connection configuration
 	mc_set_comm_config(sockFd, config);
 
 	return sockFd;
 }
 
 int mc_open_tcp_client_socket(char* destIp, short destPort) {
-	// 使用默认配置创建连接
+	// Use default configuration to create connection
 	return mc_open_tcp_client_socket_with_config2(destIp, destPort, default_comm_config);
 }
 
@@ -274,18 +274,18 @@ mc_error_code_e mc_set_comm_config(int fd, mc_comm_config_t config) {
 		return MC_ERROR_CODE_FAILED;
 	}
 
-	// 设置套接字选项
+	// Set socket options
 #ifdef _WIN32
 	int send_timeout = config.send_timeout_ms;
 	int recv_timeout = config.recv_timeout_ms;
 
 	if (setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (const char*)&send_timeout, sizeof(send_timeout)) < 0) {
-		mc_log_error(MC_ERROR_CODE_FAILED, "设置发送超时失败");
+		mc_log_error(MC_ERROR_CODE_FAILED, "Failed to set send timeout");
 		return MC_ERROR_CODE_FAILED;
 	}
 
 	if (setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&recv_timeout, sizeof(recv_timeout)) < 0) {
-		mc_log_error(MC_ERROR_CODE_FAILED, "设置接收超时失败");
+		mc_log_error(MC_ERROR_CODE_FAILED, "Failed to set receive timeout");
 		return MC_ERROR_CODE_FAILED;
 	}
 #else
@@ -300,12 +300,12 @@ mc_error_code_e mc_set_comm_config(int fd, mc_comm_config_t config) {
 	};
 
 	if (setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (const char*)&send_timeout, sizeof(send_timeout)) < 0) {
-		mc_log_error(MC_ERROR_CODE_FAILED, "设置发送超时失败");
+		mc_log_error(MC_ERROR_CODE_FAILED, "Failed to set send timeout");
 		return MC_ERROR_CODE_FAILED;
 	}
 
 	if (setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&recv_timeout, sizeof(recv_timeout)) < 0) {
-		mc_log_error(MC_ERROR_CODE_FAILED, "设置接收超时失败");
+		mc_log_error(MC_ERROR_CODE_FAILED, "Failed to set receive timeout");
 		return MC_ERROR_CODE_FAILED;
 	}
 #endif

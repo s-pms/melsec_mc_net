@@ -11,28 +11,28 @@ typedef CRITICAL_SECTION mc_mutex_t;
 typedef pthread_mutex_t mc_mutex_t;
 #endif
 
-// 初始化互斥锁
+// Initialize mutex lock
 mc_error_code_e mc_mutex_init(mc_mutex_t* mutex);
 
-// 销毁互斥锁
+// Destroy mutex lock
 mc_error_code_e mc_mutex_destroy(mc_mutex_t* mutex);
 
-// 加锁
+// Lock
 mc_error_code_e mc_mutex_lock(mc_mutex_t* mutex);
 
-// 尝试加锁，非阻塞
+// Try to lock, non-blocking
 mc_error_code_e mc_mutex_trylock(mc_mutex_t* mutex);
 
-// 解锁
+// Unlock
 mc_error_code_e mc_mutex_unlock(mc_mutex_t* mutex);
 
-// 全局连接锁，用于保护连接相关操作
+// Global connection lock, used to protect connection-related operations
 extern mc_mutex_t g_connection_mutex;
 
-// 初始化线程安全环境
+// Initialize thread-safe environment
 mc_error_code_e mc_thread_safe_init(void);
 
-// 清理线程安全环境
+// Clean up thread-safe environment
 mc_error_code_e mc_thread_safe_cleanup(void);
 
 #endif // !__H_THREAD_SAFE_H__
