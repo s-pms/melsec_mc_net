@@ -1,14 +1,21 @@
-#include <string.h>
+﻿#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "melsec_helper.h"
 #include "socket.h"
+#include "error_handler.h"
+#include "thread_safe.h"
 
 // 从三菱地址，是否位读取进行创建读取的MC的核心报文
 // is_bit 是否进行了位读取操作
 byte_array_info build_read_core_command(melsec_mc_address_data address_data, bool is_bit)
 {
+	byte_array_info ret = { 0 };
 	byte* command = (byte*)malloc(10);
+	if (command == NULL) {
+		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "创建读取核心报文内存分配失败");
+		return ret;
+	}
 
 	command[0] = 0x01;                                                      // 批量读取数据命令
 	command[1] = 0x04;
@@ -21,7 +28,6 @@ byte_array_info build_read_core_command(melsec_mc_address_data address_data, boo
 	command[8] = (byte)(address_data.length % 256);                          // 软元件的长度
 	command[9] = (byte)(address_data.length >> 8);
 
-	byte_array_info ret;
 	ret.data = command;
 	ret.length = 10;
 	return ret;
@@ -31,42 +37,53 @@ byte_array_info build_read_core_command(melsec_mc_address_data address_data, boo
 // 是否进行了位读取操作
 byte_array_info build_ascii_read_core_command(melsec_mc_address_data address_data, bool is_bit)
 {
+	byte_array_info ret = { 0 };
 	byte* command = (byte*)malloc(20);
-	int length = 0;
-	if (command != NULL)
+	if (command == NULL)
 	{
-		command[0] = 0x30;                                    // 批量读取数据命令
-		command[1] = 0x34;
-		command[2] = 0x30;
-		command[3] = 0x31;
-		command[4] = 0x30;                                   // 以点为单位还是字为单位成批读取
-		command[5] = 0x30;
-		command[6] = 0x30;
-		command[7] = is_bit ? (byte)0x31 : (byte)0x30;
-		command[8] = (byte)(address_data.data_type.ascii_code[0]);          // 软元件类型
-		command[9] = (byte)(address_data.data_type.ascii_code[1]);
-
-		byte_array_info temp = build_bytes_from_address(address_data.address_start, address_data.data_type);
-		command[10] = temp.data[0];            // 起始地址的地位
-		command[11] = temp.data[1];
-		command[12] = temp.data[2];
-		command[13] = temp.data[3];
-		command[14] = temp.data[4];
-		command[15] = temp.data[5];
-		RELEASE_DATA(temp.data);
-
-		temp = build_ascii_bytes_from_ushort(address_data.length);
-		command[16] = temp.data[0];                               // 软元件点数
-		command[17] = temp.data[1];
-		command[18] = temp.data[2];
-		command[19] = temp.data[3];
-		RELEASE_DATA(temp.data);
-		length = 20;
+		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "创建ASCII读取核心报文内存分配失败");
+		return ret;
 	}
 
-	byte_array_info ret = { 0 };
+	command[0] = 0x30;                                    // 批量读取数据命令
+	command[1] = 0x34;
+	command[2] = 0x30;
+	command[3] = 0x31;
+	command[4] = 0x30;                                   // 以点为单位还是字为单位成批读取
+	command[5] = 0x30;
+	command[6] = 0x30;
+	command[7] = is_bit ? (byte)0x31 : (byte)0x30;
+	command[8] = (byte)(address_data.data_type.ascii_code[0]);          // 软元件类型
+	command[9] = (byte)(address_data.data_type.ascii_code[1]);
+
+	byte_array_info temp = build_bytes_from_address(address_data.address_start, address_data.data_type);
+	if (temp.data == NULL) {
+		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "创建地址字节数组失败");
+		RELEASE_DATA(command);
+		return ret;
+	}
+	command[10] = temp.data[0];            // 起始地址的地位
+	command[11] = temp.data[1];
+	command[12] = temp.data[2];
+	command[13] = temp.data[3];
+	command[14] = temp.data[4];
+	command[15] = temp.data[5];
+	RELEASE_DATA(temp.data);
+
+	temp = build_ascii_bytes_from_ushort(address_data.length);
+	if (temp.data == NULL) {
+		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "创建长度字节数组失败");
+		RELEASE_DATA(command);
+		return ret;
+	}
+	command[16] = temp.data[0];                               // 软元件点数
+	command[17] = temp.data[1];
+	command[18] = temp.data[2];
+	command[19] = temp.data[3];
+	RELEASE_DATA(temp.data);
+
 	ret.data = command;
-	ret.length = length;
+	ret.length = 20;
 	return ret;
 }
 
@@ -108,6 +125,7 @@ byte_array_info build_write_word_core_command(melsec_mc_address_data address_dat
 
 byte_array_info build_ascii_write_word_core_command(melsec_mc_address_data address_data, byte_array_info value)
 {
+	byte_array_info ret = { 0 };
 	int val_len = 0;
 	if (value.data != NULL) val_len = value.length;
 
@@ -115,86 +133,108 @@ byte_array_info build_ascii_write_word_core_command(melsec_mc_address_data addre
 	if (buffer.data != NULL)
 		val_len = buffer.length;
 
-	int length = 0;
 	byte* command = (byte*)malloc(20 + val_len);
-	if (command != NULL)
+	if (command == NULL)
 	{
-		command[0] = 0x31;                                  // 批量写入的命令
-		command[1] = 0x34;
-		command[2] = 0x30;
-		command[3] = 0x31;
-		command[4] = 0x30;                                 // 子命令
-		command[5] = 0x30;
-		command[6] = 0x30;
-		command[7] = 0x30;
-		command[8] = (byte)address_data.data_type.ascii_code[0]; // 软元件类型
-		command[9] = (byte)address_data.data_type.ascii_code[1];
-
-		byte_array_info temp = build_bytes_from_address(address_data.address_start, address_data.data_type);
-		command[10] = temp.data[0];            // 起始地址的地位
-		command[11] = temp.data[1];
-		command[12] = temp.data[2];
-		command[13] = temp.data[3];
-		command[14] = temp.data[4];
-		command[15] = temp.data[5];
-		RELEASE_DATA(temp.data);
-
-		temp = build_ascii_bytes_from_ushort(address_data.length);
-		command[16] = temp.data[0];                               // 软元件点数
-		command[17] = temp.data[1];
-		command[18] = temp.data[2];
-		command[19] = temp.data[3];
-		RELEASE_DATA(temp.data);
-
-		if (buffer.data != NULL)
-			memcpy(command + 20, buffer.data, val_len);
+		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "创建ASCII写入字核心报文内存分配失败");
 		RELEASE_DATA(buffer.data);
-
-		length = 20 + val_len;
+		return ret;
 	}
 
-	byte_array_info ret = { 0 };
+	command[0] = 0x31;                                  // 批量写入的命令
+	command[1] = 0x34;
+	command[2] = 0x30;
+	command[3] = 0x31;
+	command[4] = 0x30;                                 // 子命令
+	command[5] = 0x30;
+	command[6] = 0x30;
+	command[7] = 0x30;
+	command[8] = (byte)address_data.data_type.ascii_code[0]; // 软元件类型
+	command[9] = (byte)address_data.data_type.ascii_code[1];
+
+	byte_array_info temp = build_bytes_from_address(address_data.address_start, address_data.data_type);
+	if (temp.data == NULL) {
+		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "创建ASCII写入地址字节数组失败");
+		RELEASE_DATA(command);
+		RELEASE_DATA(buffer.data);
+		return ret;
+	}
+	command[10] = temp.data[0];            // 起始地址的地位
+	command[11] = temp.data[1];
+	command[12] = temp.data[2];
+	command[13] = temp.data[3];
+	command[14] = temp.data[4];
+	command[15] = temp.data[5];
+	RELEASE_DATA(temp.data);
+
+	temp = build_ascii_bytes_from_ushort(address_data.length);
+	if (temp.data == NULL) {
+		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "创建ASCII写入长度字节数组失败");
+		RELEASE_DATA(command);
+		RELEASE_DATA(buffer.data);
+		return ret;
+	}
+	command[16] = temp.data[0];                               // 软元件点数
+	command[17] = temp.data[1];
+	command[18] = temp.data[2];
+	command[19] = temp.data[3];
+	RELEASE_DATA(temp.data);
+
+	if (buffer.data != NULL)
+		memcpy(command + 20, buffer.data, val_len);
+	RELEASE_DATA(buffer.data);
+
 	ret.data = command;
-	ret.length = length;
+	ret.length = 20 + val_len;
 	return ret;
 }
 
 byte_array_info build_write_bit_core_command(melsec_mc_address_data address_data, bool_array_info value)
 {
+	byte_array_info ret = { 0 };
 	int val_len = 0;
 	if (value.data != NULL) val_len = value.length;
 
 	byte_array_info buffer = trans_bool_array_to_byte_data(value);
+	if (buffer.data == NULL) {
+		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "创建位写入数据转换失败");
+		return ret;
+	}
 	val_len = buffer.length;
 
-	int length = 0;
 	byte* command = (byte*)malloc(10 + val_len);
-	if (command != NULL)
+	if (command == NULL)
 	{
-		command[0] = 0x01;                                       // 批量写入数据命令
-		command[1] = 0x14;
-		command[2] = 0x01;                                       // 以位为单位成批写入
-		command[3] = 0x00;
-		command[4] = (byte)(address_data.address_start % 256);   // 起始地址的地位
-		command[5] = (byte)(address_data.address_start >> 8);
-		command[6] = (byte)(address_data.address_start >> 16);
-		command[7] = address_data.data_type.data_code;            // 指明读取的数据
-		command[8] = (byte)(address_data.length % 256);           // 软元件的长度
-		command[9] = (byte)(address_data.length >> 8);
-
-		memcpy(command + 10, buffer.data, val_len);
+		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "创建位写入核心报文内存分配失败");
 		RELEASE_DATA(buffer.data);
-		length = 10 + val_len;
+		return ret;
 	}
 
-	byte_array_info ret = { 0 };
+	command[0] = 0x01;										// 批量写入数据命令
+	command[1] = 0x14;
+	command[2] = 0x01;										// 以位为单位成批写入
+	command[3] = 0x00;
+	command[4] = (byte)(address_data.address_start % 256);		// 起始地址的地位
+	command[5] = (byte)(address_data.address_start >> 8);
+	command[6] = (byte)(address_data.address_start >> 16);
+	command[7] = address_data.data_type.data_code;				// 指明写入的数据
+	command[8] = (byte)(address_data.length % 256);				// 软元件长度的地位
+	command[9] = (byte)(address_data.length >> 8);
+
+	if (buffer.data != NULL)
+	{
+		memcpy(command + 10, buffer.data, val_len);
+		RELEASE_DATA(buffer.data);
+	}
+
 	ret.data = command;
-	ret.length = length;
+	ret.length = 10 + val_len;
 	return ret;
 }
 
 byte_array_info build_ascii_write_bit_core_command(melsec_mc_address_data address_data, bool_array_info value)
 {
+	byte_array_info ret = { 0 };
 	int val_len = 0;
 	if (value.data != NULL) val_len = value.length;
 
@@ -202,47 +242,59 @@ byte_array_info build_ascii_write_bit_core_command(melsec_mc_address_data addres
 	if (buffer.data != NULL)
 		val_len = buffer.length;
 
-	int length = 0;
 	byte* command = (byte*)malloc(20 + val_len);
-	if (command != NULL)
+	if (command == NULL)
 	{
-		command[0] = 0x31;                                                                              // 批量写入的命令
-		command[1] = 0x34;
-		command[2] = 0x30;
-		command[3] = 0x31;
-		command[4] = 0x30;                                                                              // 子命令
-		command[5] = 0x30;
-		command[6] = 0x30;
-		command[7] = 0x31;
-		command[8] = (byte)address_data.data_type.ascii_code[0]; // 软元件类型
-		command[9] = (byte)address_data.data_type.ascii_code[1];
-		byte_array_info temp = build_bytes_from_address(address_data.address_start, address_data.data_type);
-		command[10] = temp.data[0];            // 起始地址的地位
-		command[11] = temp.data[1];
-		command[12] = temp.data[2];
-		command[13] = temp.data[3];
-		command[14] = temp.data[4];
-		command[15] = temp.data[5];
-		RELEASE_DATA(temp.data);
-
-		temp = build_ascii_bytes_from_ushort(address_data.length);
-		command[16] = temp.data[0];                               // 软元件点数
-		command[17] = temp.data[1];
-		command[18] = temp.data[2];
-		command[19] = temp.data[3];
-		RELEASE_DATA(temp.data);
-
-		if (buffer.data != NULL)
-			memcpy(command + 20, buffer.data, val_len);
-
+		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "创建ASCII位写入核心报文内存分配失败");
 		RELEASE_DATA(buffer.data);
-
-		length = 20 + val_len;
+		return ret;
 	}
 
-	byte_array_info ret;
+	command[0] = 0x31;                                                                              // 批量写入的命令
+	command[1] = 0x34;
+	command[2] = 0x30;
+	command[3] = 0x31;
+	command[4] = 0x30;                                                                              // 子命令
+	command[5] = 0x30;
+	command[6] = 0x30;
+	command[7] = 0x31;
+	command[8] = (byte)address_data.data_type.ascii_code[0]; // 软元件类型
+	command[9] = (byte)address_data.data_type.ascii_code[1];
+	byte_array_info temp = build_bytes_from_address(address_data.address_start, address_data.data_type);
+	if (temp.data == NULL) {
+		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "创建ASCII位写入地址字节数组失败");
+		RELEASE_DATA(command);
+		RELEASE_DATA(buffer.data);
+		return ret;
+	}
+	command[10] = temp.data[0];            // 起始地址的地位
+	command[11] = temp.data[1];
+	command[12] = temp.data[2];
+	command[13] = temp.data[3];
+	command[14] = temp.data[4];
+	command[15] = temp.data[5];
+	RELEASE_DATA(temp.data);
+
+	temp = build_ascii_bytes_from_ushort(address_data.length);
+	if (temp.data == NULL) {
+		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "创建ASCII位写入长度字节数组失败");
+		RELEASE_DATA(command);
+		RELEASE_DATA(buffer.data);
+		return ret;
+	}
+	command[16] = temp.data[0];                               // 软元件点数
+	command[17] = temp.data[1];
+	command[18] = temp.data[2];
+	command[19] = temp.data[3];
+	RELEASE_DATA(temp.data);
+
+	if (buffer.data != NULL) {
+		memcpy(command + 20, buffer.data, val_len);
+		RELEASE_DATA(buffer.data);
+	}
+
 	ret.data = command;
-	ret.length = length;
+	ret.length = 20 + val_len;
 	return ret;
 }
 

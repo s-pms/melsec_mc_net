@@ -3,6 +3,8 @@
 
 #include "melsec_mc_comm.h"
 
+extern plc_network_address g_network_address;
+
 mc_error_code_e mc_read_response(int fd, byte_array_info* response, int* read_count);
 
 //////////////////////////////////////////////////////////////////////////
@@ -21,7 +23,5 @@ byte_array_info pack_mc_command(byte_array_info* mc_core, byte network_number, b
 
 //从PLC反馈的数据中提取出实际的数据内容，需要传入反馈数据，是否位读取
 void extract_actual_bool_data(byte_array_info* response);
-
-plc_network_address g_network_address;
 
 #endif//__H_MELSEC_MC_BIN_PRIVATE_H__

@@ -10,6 +10,11 @@ CC = gcc
 VERSION = release
 endif
 
+# 添加pthread库链接
+ifneq ($(findstring _WIN32,$(CFLAGS)),_WIN32)
+    LDFLAGS += -lpthread
+endif
+
 #CC = gcc
 
 # $(wildcard *.c)表示扫描当前目录下所有.c文件
@@ -90,8 +95,3 @@ $(DEP_DIR)/%.d:%.c
 clean:			
 	rm -f $(BIN) $(OBJS) $(DEPS) *.gch
 #----------------------------------------------------------------nend------------------
-
-
-
-
-

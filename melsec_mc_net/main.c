@@ -126,13 +126,12 @@ void libso_fun(char* szdllpath)
 
 int main(int argc, char** argv)
 {
-#ifdef _WIN32
-	WSADATA wsa;
-	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
+#include "network_init.h"
+
+	if (mc_network_init() != MC_ERROR_CODE_SUCCESS)
 	{
 		return -1;
 	}
-#endif
 
 #ifdef USE_SO
 	char szdllpath[1024];
@@ -161,7 +160,7 @@ int main(int argc, char** argv)
 #endif
 
 	const int TEST_COUNT = 5000;
-	const int TEST_SLEEP_TIME = 200;
+	const int TEST_SLEEP_TIME = 2;	// seconds
 	int failed_count = 0;
 
 	for (int i = 0; i < TEST_COUNT; i++)
@@ -281,7 +280,7 @@ int main(int argc, char** argv)
 		GET_RESULT(ret);
 
 #ifdef _WIN32
-		Sleep(TEST_SLEEP_TIME);
+		Sleep(TEST_SLEEP_TIME*1000);
 #else
 		sleep(TEST_SLEEP_TIME);
 #endif
@@ -295,8 +294,8 @@ int main(int argc, char** argv)
 	mc_disconnect(fd);
 
 label_end:
+	mc_network_cleanup();
 #ifdef _WIN32
-	WSACleanup();
 #else
 	;
 #endif

@@ -1,6 +1,10 @@
 #ifndef __H_TYPEDEF_H__
 #define __H_TYPEDEF_H__
 
+#if defined(_WIN32) || defined(_WIN64)
+#define WIN32_LEAN_AND_MEAN
+#endif
+
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -21,7 +25,9 @@ typedef enum _tag_mc_error_code {
 	MC_ERROR_CODE_PARSE_ADDRESS_FAILED, // 地址解析错误
 	MC_ERROR_CODE_BUILD_CORE_CMD_FAILED, // 构建核心命令错误
 	MC_ERROR_CODE_SOCKET_SEND_FAILED, // 发送命令错误
+	MC_ERROR_CODE_SOCKET_RECV_FAILED, // 接收命令错误
 	MC_ERROR_CODE_RESPONSE_HEADER_FAILED, // 响应包头不完整错误
+	MC_ERROR_CODE_CONNECTION_CLOSED,	// 连接已关闭
 	MC_ERROR_CODE_UNKOWN = 99, // 未知错误
 } mc_error_code_e;
 
