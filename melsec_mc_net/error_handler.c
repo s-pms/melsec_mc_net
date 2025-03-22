@@ -1,6 +1,4 @@
-﻿#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+﻿#include <string.h>
 #include <time.h>
 #include "error_handler.h"
 
@@ -19,27 +17,27 @@ static const mc_error_info_t error_info_table[] = {
 	{MC_ERROR_CODE_UNKOWN, "Unknown error", "Please contact technical support"}
 };
 
-// 获取错误信息
+// Get error message
 const char* mc_get_error_message(mc_error_code_e error_code) {
 	for (int i = 0; i < sizeof(error_info_table) / sizeof(error_info_table[0]); i++) {
 		if (error_info_table[i].code == error_code) {
 			return error_info_table[i].message;
 		}
 	}
-	return "未定义的错误";
+	return "Undefined error";
 }
 
-// 获取错误恢复提示
+// Get error recovery hint
 const char* mc_get_error_recovery_hint(mc_error_code_e error_code) {
 	for (int i = 0; i < sizeof(error_info_table) / sizeof(error_info_table[0]); i++) {
 		if (error_info_table[i].code == error_code) {
 			return error_info_table[i].recovery_hint;
 		}
 	}
-	return "请联系技术支持";
+	return "Please contact technical support";
 }
 
-// 获取完整错误信息结构体
+// Get complete error information structure
 mc_error_info_t mc_get_error_info(mc_error_code_e error_code) {
 	for (int i = 0; i < sizeof(error_info_table) / sizeof(error_info_table[0]); i++) {
 		if (error_info_table[i].code == error_code) {
@@ -47,7 +45,7 @@ mc_error_info_t mc_get_error_info(mc_error_code_e error_code) {
 		}
 	}
 
-	mc_error_info_t unknown_error = { MC_ERROR_CODE_UNKOWN, "未定义的错误", "请联系技术支持" };
+	mc_error_info_t unknown_error = { MC_ERROR_CODE_UNKOWN, "Undefined error", "Please contact technical support" };
 	return unknown_error;
 }
 

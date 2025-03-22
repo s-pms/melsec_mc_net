@@ -1,9 +1,7 @@
 ﻿#include "socket.h"
-#include <stdio.h>
 #include <string.h>
 #include "error_handler.h"
 #include "thread_safe.h"
-#include "comm_config.h"
 
 #ifdef _WIN32
 #include <winsock2.h>
@@ -332,11 +330,11 @@ mc_error_code_e mc_get_comm_config(int fd, mc_comm_config_t* config) {
 	}
 }
 
-// 使用指定配置创建连接
+// Create connection using specified configuration
 int mc_open_tcp_client_socket_with_config(char* destIp, short destPort, mc_comm_config_t config) {
 	int sockFd = mc_open_tcp_client_socket(destIp, destPort);
 	if (sockFd <= 0) {
-		mc_log_error(MC_ERROR_CODE_FAILED, "创建TCP连接失败");
+		mc_log_error(MC_ERROR_CODE_FAILED, "Failed to create TCP connection");
 		return sockFd;
 	}
 

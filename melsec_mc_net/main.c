@@ -280,7 +280,7 @@ int main(int argc, char** argv)
 		GET_RESULT(ret);
 
 #ifdef _WIN32
-		Sleep(TEST_SLEEP_TIME*1000);
+		Sleep(TEST_SLEEP_TIME * 1000);
 #else
 		sleep(TEST_SLEEP_TIME);
 #endif

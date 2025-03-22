@@ -1,11 +1,10 @@
-﻿#include <stdio.h>
-#include "thread_safe.h"
+﻿#include "thread_safe.h"
 #include "error_handler.h"
 
-// 全局连接锁
+// Global connection lock
 mc_mutex_t g_connection_mutex;
 
-// 初始化互斥锁
+// Initialize mutex
 mc_error_code_e mc_mutex_init(mc_mutex_t* mutex) {
 	if (mutex == NULL) {
 		mc_log_error(MC_ERROR_CODE_INVALID_PARAMETER, "Mutex pointer is NULL");
@@ -16,7 +15,7 @@ mc_error_code_e mc_mutex_init(mc_mutex_t* mutex) {
 	InitializeCriticalSection(mutex);
 #else
 	if (pthread_mutex_init(mutex, NULL) != 0) {
-		mc_log_error(MC_ERROR_CODE_FAILED, "初始化互斥锁失败");
+		mc_log_error(MC_ERROR_CODE_FAILED, "Failed to initialize mutex");
 		return MC_ERROR_CODE_FAILED;
 	}
 #endif
@@ -24,7 +23,7 @@ mc_error_code_e mc_mutex_init(mc_mutex_t* mutex) {
 	return MC_ERROR_CODE_SUCCESS;
 }
 
-// 销毁互斥锁
+// Destroy mutex
 mc_error_code_e mc_mutex_destroy(mc_mutex_t* mutex) {
 	if (mutex == NULL) {
 		mc_log_error(MC_ERROR_CODE_INVALID_PARAMETER, "Mutex pointer is NULL");
@@ -35,7 +34,7 @@ mc_error_code_e mc_mutex_destroy(mc_mutex_t* mutex) {
 	DeleteCriticalSection(mutex);
 #else
 	if (pthread_mutex_destroy(mutex) != 0) {
-		mc_log_error(MC_ERROR_CODE_FAILED, "销毁互斥锁失败");
+		mc_log_error(MC_ERROR_CODE_FAILED, "Failed to destroy mutex");
 		return MC_ERROR_CODE_FAILED;
 	}
 #endif
@@ -43,7 +42,7 @@ mc_error_code_e mc_mutex_destroy(mc_mutex_t* mutex) {
 	return MC_ERROR_CODE_SUCCESS;
 }
 
-// 加锁
+// Lock
 mc_error_code_e mc_mutex_lock(mc_mutex_t* mutex) {
 	if (mutex == NULL) {
 		mc_log_error(MC_ERROR_CODE_INVALID_PARAMETER, "Mutex pointer is NULL");

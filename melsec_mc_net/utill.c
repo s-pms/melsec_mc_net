@@ -1,5 +1,4 @@
 #include "utill.h"
-#include <stdlib.h>
 #include <string.h>
 
 void short2bytes(short i, byte* bytes) {

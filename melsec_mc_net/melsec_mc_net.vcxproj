@@ -169,7 +169,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="melsec_mc_bin_batch.h" />
-    <ClInclude Include="comm_config.h" />
     <ClInclude Include="error_handler.h" />
     <ClInclude Include="melsec_helper.h" />
     <ClInclude Include="melsec_mc_ascii.h" />

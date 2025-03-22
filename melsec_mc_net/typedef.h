@@ -7,6 +7,8 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 typedef unsigned char byte;
 typedef unsigned short ushort;

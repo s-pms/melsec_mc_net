@@ -1,6 +1,4 @@
 ﻿#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include "melsec_helper.h"
 #include "socket.h"
 #include "error_handler.h"
@@ -45,24 +43,24 @@ byte_array_info build_ascii_read_core_command(melsec_mc_address_data address_dat
 		return ret;
 	}
 
-	command[0] = 0x30;                                    // 批量读取数据命令
+	command[0] = 0x30;                                    // Batch read data command
 	command[1] = 0x34;
 	command[2] = 0x30;
 	command[3] = 0x31;
-	command[4] = 0x30;                                   // 以点为单位还是字为单位成批读取
+	command[4] = 0x30;                                   // Batch read in units of points or words
 	command[5] = 0x30;
 	command[6] = 0x30;
 	command[7] = is_bit ? (byte)0x31 : (byte)0x30;
-	command[8] = (byte)(address_data.data_type.ascii_code[0]);          // 软元件类型
-	command[9] = (byte)(address_data.data_type.ascii_code[1]);
+	command[8] = (byte)(address_data.data_type.ascii_code[0]);          // Component type
+	command[9] = (byte)(address_data.data_type.ascii_code[1]);          // Component type (continued)
 
 	byte_array_info temp = build_bytes_from_address(address_data.address_start, address_data.data_type);
 	if (temp.data == NULL) {
-		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "创建地址字节数组失败");
+		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "Failed to create address byte array");
 		RELEASE_DATA(command);
 		return ret;
 	}
-	command[10] = temp.data[0];            // 起始地址的地位
+	command[10] = temp.data[0];            // Low byte of start address
 	command[11] = temp.data[1];
 	command[12] = temp.data[2];
 	command[13] = temp.data[3];
@@ -72,11 +70,11 @@ byte_array_info build_ascii_read_core_command(melsec_mc_address_data address_dat
 
 	temp = build_ascii_bytes_from_ushort(address_data.length);
 	if (temp.data == NULL) {
-		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "创建长度字节数组失败");
+		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "Failed to create length byte array");
 		RELEASE_DATA(command);
 		return ret;
 	}
-	command[16] = temp.data[0];                               // 软元件点数
+	command[16] = temp.data[0];                               // Component point count
 	command[17] = temp.data[1];
 	command[18] = temp.data[2];
 	command[19] = temp.data[3];
@@ -98,15 +96,15 @@ byte_array_info build_write_word_core_command(melsec_mc_address_data address_dat
 	if (command != NULL)
 	{
 		memset(command, 0, 10 + val_len);
-		command[0] = 0x01;											// 批量写入数据命令
+		command[0] = 0x01;											// Batch write data command
 		command[1] = 0x14;
-		command[2] = 0x00;											// 以字为单位成批读取
+		command[2] = 0x00;											// Batch read in units of words
 		command[3] = 0x00;
-		command[4] = (byte)(address_data.address_start % 256);		// 起始地址的地位
+		command[4] = (byte)(address_data.address_start % 256);		// Low byte of start address
 		command[5] = (byte)(address_data.address_start >> 8);
 		command[6] = (byte)(address_data.address_start >> 16);
-		command[7] = address_data.data_type.data_code;				// 指明写入的数据
-		command[8] = (byte)((val_len >> 1) % 256);					// 软元件长度的地位
+		command[7] = address_data.data_type.data_code;				// Specify the data to write
+		command[8] = (byte)((val_len >> 1) % 256);					// Low byte of component length
 		command[9] = (byte)((val_len >> 1) >> 8);
 		if (value.data != NULL)
 		{
@@ -136,30 +134,30 @@ byte_array_info build_ascii_write_word_core_command(melsec_mc_address_data addre
 	byte* command = (byte*)malloc(20 + val_len);
 	if (command == NULL)
 	{
-		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "创建ASCII写入字核心报文内存分配失败");
+		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "Failed to allocate memory for ASCII write word core message");
 		RELEASE_DATA(buffer.data);
 		return ret;
 	}
 
-	command[0] = 0x31;                                  // 批量写入的命令
+	command[0] = 0x31;                                  // Batch write command
 	command[1] = 0x34;
 	command[2] = 0x30;
 	command[3] = 0x31;
-	command[4] = 0x30;                                 // 子命令
+	command[4] = 0x30;                                 // Sub-command
 	command[5] = 0x30;
 	command[6] = 0x30;
 	command[7] = 0x30;
-	command[8] = (byte)address_data.data_type.ascii_code[0]; // 软元件类型
-	command[9] = (byte)address_data.data_type.ascii_code[1];
+	command[8] = (byte)address_data.data_type.ascii_code[0]; // Component type
+	command[9] = (byte)address_data.data_type.ascii_code[1]; // Component type (continued)
 
 	byte_array_info temp = build_bytes_from_address(address_data.address_start, address_data.data_type);
 	if (temp.data == NULL) {
-		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "创建ASCII写入地址字节数组失败");
+		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "Failed to create ASCII write address byte array");
 		RELEASE_DATA(command);
 		RELEASE_DATA(buffer.data);
 		return ret;
 	}
-	command[10] = temp.data[0];            // 起始地址的地位
+	command[10] = temp.data[0];            // Low byte of start address
 	command[11] = temp.data[1];
 	command[12] = temp.data[2];
 	command[13] = temp.data[3];
@@ -169,12 +167,12 @@ byte_array_info build_ascii_write_word_core_command(melsec_mc_address_data addre
 
 	temp = build_ascii_bytes_from_ushort(address_data.length);
 	if (temp.data == NULL) {
-		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "创建ASCII写入长度字节数组失败");
+		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "Failed to create ASCII write length byte array");
 		RELEASE_DATA(command);
 		RELEASE_DATA(buffer.data);
 		return ret;
 	}
-	command[16] = temp.data[0];                               // 软元件点数
+	command[16] = temp.data[0];                               // Component point count
 	command[17] = temp.data[1];
 	command[18] = temp.data[2];
 	command[19] = temp.data[3];
@@ -197,7 +195,7 @@ byte_array_info build_write_bit_core_command(melsec_mc_address_data address_data
 
 	byte_array_info buffer = trans_bool_array_to_byte_data(value);
 	if (buffer.data == NULL) {
-		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "创建位写入数据转换失败");
+		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "Failed to create bit write data conversion");
 		return ret;
 	}
 	val_len = buffer.length;
@@ -205,20 +203,20 @@ byte_array_info build_write_bit_core_command(melsec_mc_address_data address_data
 	byte* command = (byte*)malloc(10 + val_len);
 	if (command == NULL)
 	{
-		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "创建位写入核心报文内存分配失败");
+		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "Failed to allocate memory for bit write core message");
 		RELEASE_DATA(buffer.data);
 		return ret;
 	}
 
-	command[0] = 0x01;										// 批量写入数据命令
+	command[0] = 0x01;										// Batch write data command
 	command[1] = 0x14;
-	command[2] = 0x01;										// 以位为单位成批写入
+	command[2] = 0x01;										// Batch write in units of bits
 	command[3] = 0x00;
-	command[4] = (byte)(address_data.address_start % 256);		// 起始地址的地位
+	command[4] = (byte)(address_data.address_start % 256);		// Low byte of start address
 	command[5] = (byte)(address_data.address_start >> 8);
 	command[6] = (byte)(address_data.address_start >> 16);
-	command[7] = address_data.data_type.data_code;				// 指明写入的数据
-	command[8] = (byte)(address_data.length % 256);				// 软元件长度的地位
+	command[7] = address_data.data_type.data_code;				// Specify the data to write
+	command[8] = (byte)(address_data.length % 256);				// Low byte of component length
 	command[9] = (byte)(address_data.length >> 8);
 
 	if (buffer.data != NULL)
@@ -245,29 +243,29 @@ byte_array_info build_ascii_write_bit_core_command(melsec_mc_address_data addres
 	byte* command = (byte*)malloc(20 + val_len);
 	if (command == NULL)
 	{
-		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "创建ASCII位写入核心报文内存分配失败");
+		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "Failed to allocate memory for ASCII bit write core message");
 		RELEASE_DATA(buffer.data);
 		return ret;
 	}
 
-	command[0] = 0x31;                                                                              // 批量写入的命令
+	command[0] = 0x31;                                                                              // Batch write command
 	command[1] = 0x34;
 	command[2] = 0x30;
 	command[3] = 0x31;
-	command[4] = 0x30;                                                                              // 子命令
+	command[4] = 0x30;                                                                              // Sub-command
 	command[5] = 0x30;
 	command[6] = 0x30;
 	command[7] = 0x31;
-	command[8] = (byte)address_data.data_type.ascii_code[0]; // 软元件类型
-	command[9] = (byte)address_data.data_type.ascii_code[1];
+	command[8] = (byte)address_data.data_type.ascii_code[0]; // Component type
+	command[9] = (byte)address_data.data_type.ascii_code[1]; // Component type (continued)
 	byte_array_info temp = build_bytes_from_address(address_data.address_start, address_data.data_type);
 	if (temp.data == NULL) {
-		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "创建ASCII位写入地址字节数组失败");
+		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "Failed to create ASCII bit write address byte array");
 		RELEASE_DATA(command);
 		RELEASE_DATA(buffer.data);
 		return ret;
 	}
-	command[10] = temp.data[0];            // 起始地址的地位
+	command[10] = temp.data[0];            // Low byte of start address
 	command[11] = temp.data[1];
 	command[12] = temp.data[2];
 	command[13] = temp.data[3];
@@ -277,12 +275,12 @@ byte_array_info build_ascii_write_bit_core_command(melsec_mc_address_data addres
 
 	temp = build_ascii_bytes_from_ushort(address_data.length);
 	if (temp.data == NULL) {
-		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "创建ASCII位写入长度字节数组失败");
+		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "Failed to create ASCII bit write length byte array");
 		RELEASE_DATA(command);
 		RELEASE_DATA(buffer.data);
 		return ret;
 	}
-	command[16] = temp.data[0];                               // 软元件点数
+	command[16] = temp.data[0];                               // Component point count
 	command[17] = temp.data[1];
 	command[18] = temp.data[2];
 	command[19] = temp.data[3];
@@ -507,7 +505,7 @@ mc_error_code_e mc_parse_write_response(byte_array_info response, byte_array_inf
 	if (rsCode == 0 && rsCount == (response.length - min))
 		ret = MC_ERROR_CODE_SUCCESS;
 
-	//code 以后的内容返回
+	//Return content after code
 	if (rsCount > 2 && (data != NULL))
 	{
 		data->data = (byte*)malloc(rsCount);
@@ -535,7 +533,7 @@ bool mc_try_send_msg(int fd, byte_array_info* in_bytes)
 		if (real_sends == need_send) {
 			break;
 		}
-		// 处理发送失败的逻辑，例如重试或记录错误
+		// Handle send failure logic, such as retry or error logging
 		retry_times++;
 	}
 

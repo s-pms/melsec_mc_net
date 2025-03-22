@@ -1,5 +1,4 @@
 #include "melsec_mc_comm.h"
-#include <stdlib.h>
 #include <string.h>
 
 melsec_mc_data_type mc_create_data_type(byte code, byte type, const char* ascii_code, int from_base) {

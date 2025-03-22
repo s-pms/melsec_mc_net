@@ -32,11 +32,11 @@ DEPS = $(SRCS:.c=.d)
 BIN := $(addprefix $(BUILD_ROOT)/,$(BIN))
 
 #定义存放ojb文件的目录，目录统一到一个位置才方便后续链接，不然整到各个子目录去，不好链接
-#注意下边这个字符串，末尾不要有空格等否则会语法错误 
+#Note that the string below should not have spaces or other characters at the end, otherwise it will cause syntax errors 
 LINK_OBJ_DIR = $(BUILD_ROOT)/app/link_obj
 DEP_DIR = $(BUILD_ROOT)/app/dep
 
-#-p是递归创建目录，没有就创建，有就不需要创建了
+#-p is for recursive directory creation, create if it doesn't exist, no need to create if it exists
 $(shell mkdir -p $(LINK_OBJ_DIR))
 $(shell mkdir -p $(DEP_DIR))
 

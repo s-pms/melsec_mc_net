@@ -5,7 +5,7 @@
 #include "socket.h"
 #include "error_handler.h"
 #include "thread_safe.h"
-#include "comm_config.h"
+
 #ifdef _WIN32
 #include <winsock2.h>
 #pragma comment(lib, "ws2_32.lib") /* Linking with winsock library */
@@ -18,41 +18,41 @@
 plc_network_address g_network_address;
 
 /**
- * @brief 连接到PLC设备
- * @param ip_addr PLC的IP地址
- * @param port PLC的端口号
- * @param network_addr 网络地址
- * @param station_addr 站号
- * @param config 可选的通信配置，NULL表示使用默认配置
- * @return 成功返回连接描述符(>0)，失败返回-1
+ * @brief Connect to PLC device
+ * @param ip_addr PLC's IP address
+ * @param port PLC's port number
+ * @param network_addr Network address
+ * @param station_addr Station number
+ * @param config Optional communication configuration, NULL means use default configuration
+ * @return Returns connection descriptor (>0) on success, -1 on failure
  */
 int mc_connect(char* ip_addr, int port, byte network_addr, byte station_addr)
 {
 	if (ip_addr == NULL || port <= 0) {
-		mc_log_error(MC_ERROR_CODE_INVALID_PARAMETER, "连接PLC参数错误: IP地址为空或端口号无效");
+		mc_log_error(MC_ERROR_CODE_INVALID_PARAMETER, "PLC connection parameter error: IP address is empty or port number is invalid");
 		return -1;
 	}
 
-	// 初始化线程安全环境（如果尚未初始化）
+	// Initialize thread-safe environment (if not already initialized)
 	static bool thread_safe_initialized = false;
 	if (!thread_safe_initialized) {
 		if (mc_thread_safe_init() != MC_ERROR_CODE_SUCCESS) {
-			mc_log_error(MC_ERROR_CODE_FAILED, "初始化线程安全环境失败");
+			mc_log_error(MC_ERROR_CODE_FAILED, "Failed to initialize thread-safe environment");
 			return -1;
 		}
 		thread_safe_initialized = true;
 	}
 
-	// 加锁保护全局网络地址设置
+	// Lock protection for global network address settings
 	mc_mutex_lock(&g_connection_mutex);
 	g_network_address.network_number = network_addr;
 	g_network_address.station_number = station_addr;
 	mc_mutex_unlock(&g_connection_mutex);
 
-	// 使用默认配置创建连接
+	// Create connection using default configuration
 	int fd = mc_open_tcp_client_socket(ip_addr, port);
 	if (fd <= 0) {
-		mc_log_error(MC_ERROR_CODE_FAILED, "连接PLC失败: 无法建立TCP连接");
+		mc_log_error(MC_ERROR_CODE_FAILED, "Failed to connect to PLC: Unable to establish TCP connection");
 		return -1;
 	}
 
@@ -60,24 +60,24 @@ int mc_connect(char* ip_addr, int port, byte network_addr, byte station_addr)
 }
 
 /**
- * @brief 断开与PLC的连接
- * @param fd 连接描述符
- * @return 成功返回true，失败返回false
+ * @brief Disconnect from PLC
+ * @param fd Connection descriptor
+ * @return Returns true on success, false on failure
  */
 bool mc_disconnect(int fd)
 {
 	if (fd <= 0) {
-		mc_log_error(MC_ERROR_CODE_INVALID_PARAMETER, "断开连接参数错误: 无效的连接描述符");
+		mc_log_error(MC_ERROR_CODE_INVALID_PARAMETER, "Disconnect parameter error: Invalid connection descriptor");
 		return false;
 	}
 
-	// 加锁保护
+	// Lock protection
 	mc_mutex_lock(&g_connection_mutex);
 
-	// 关闭套接字并清理资源
+	// Close socket and clean up resources
 	mc_close_tcp_socket(fd);
 
-	// 解锁
+	// Unlock
 	mc_mutex_unlock(&g_connection_mutex);
 
 	return true;
@@ -85,59 +85,59 @@ bool mc_disconnect(int fd)
 
 //////////////////////////////////////////////////////////////////////////
 /**
- * @brief 读取布尔数组值
- * @param fd 连接描述符
- * @param address 地址字符串
- * @param length 要读取的长度
- * @param out_bytes 输出的字节数组
- * @return 错误码
+ * @brief Read boolean array values
+ * @param fd Connection descriptor
+ * @param address Address string
+ * @param length Length to read
+ * @param out_bytes Output byte array
+ * @return Error code
  */
 mc_error_code_e read_bool_value(int fd, const char* address, int length, byte_array_info* out_bytes)
 {
 	if (fd <= 0 || address == NULL || length <= 0 || out_bytes == NULL) {
-		mc_log_error(MC_ERROR_CODE_INVALID_PARAMETER, "读取布尔值参数错误: 无效的参数");
+		mc_log_error(MC_ERROR_CODE_INVALID_PARAMETER, "Read boolean value parameter error: Invalid parameters");
 		return MC_ERROR_CODE_INVALID_PARAMETER;
 	}
 
 	mc_error_code_e ret = MC_ERROR_CODE_FAILED;
 	melsec_mc_address_data address_data;
 
-	// 解析地址
+	// Parse address
 	if (!mc_analysis_address(address, length, &address_data)) {
-		mc_log_error(MC_ERROR_CODE_PARSE_ADDRESS_FAILED, "解析地址失败: 无效的地址格式");
+		mc_log_error(MC_ERROR_CODE_PARSE_ADDRESS_FAILED, "Parse address failed: Invalid address format");
 		return MC_ERROR_CODE_PARSE_ADDRESS_FAILED;
 	}
 
-	// 构建读取核心命令
+	// Build read core command
 	byte_array_info core_cmd = build_read_core_command(address_data, true);
 	if (core_cmd.data == NULL) {
-		mc_log_error(MC_ERROR_CODE_BUILD_CORE_CMD_FAILED, "构建核心命令失败: 内存分配错误");
+		mc_log_error(MC_ERROR_CODE_BUILD_CORE_CMD_FAILED, "Build core command failed: Memory allocation error");
 		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
 	}
 
-	// 加锁保护全局网络地址
+	// Lock protection for global network address
 	mc_mutex_lock(&g_connection_mutex);
 	byte_array_info cmd = pack_mc_command(&core_cmd, g_network_address.network_number, g_network_address.station_number);
 	mc_mutex_unlock(&g_connection_mutex);
 
 	RELEASE_DATA(core_cmd.data);
 	if (cmd.data == NULL) {
-		mc_log_error(MC_ERROR_CODE_BUILD_CORE_CMD_FAILED, "打包MC命令失败: 内存分配错误");
+		mc_log_error(MC_ERROR_CODE_BUILD_CORE_CMD_FAILED, "Pack MC command failed: Memory allocation error");
 		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
 	}
 
-	// 获取通信配置
+	// Get communication configuration
 	mc_comm_config_t config;
 	mc_get_comm_config(fd, &config);
 
-	// 发送消息，带重试机制
+	// Send message with retry mechanism
 	bool send_ret = false;
 	for (int i = 0; i <= config.retry_count; i++) {
 		send_ret = mc_try_send_msg(fd, &cmd);
 		if (send_ret) break;
 
 		if (i < config.retry_count) {
-			// 等待重试间隔
+			// Wait for retry interval
 #ifdef _WIN32
 			Sleep(config.retry_interval_ms);
 #else
@@ -148,33 +148,33 @@ mc_error_code_e read_bool_value(int fd, const char* address, int length, byte_ar
 
 	RELEASE_DATA(cmd.data);
 	if (!send_ret) {
-		mc_log_error(MC_ERROR_CODE_SOCKET_SEND_FAILED, "发送消息失败: 网络错误或连接断开");
+		mc_log_error(MC_ERROR_CODE_SOCKET_SEND_FAILED, "Send message failed: Network error or connection disconnected");
 		return MC_ERROR_CODE_SOCKET_SEND_FAILED;
 	}
 
-	// 接收响应
+	// Receive response
 	byte_array_info response = { 0 };
 	int recv_size = 0;
 	ret = mc_read_response(fd, &response, &recv_size);
 	if (ret != MC_ERROR_CODE_SUCCESS) {
 		RELEASE_DATA(response.data);
-		mc_log_error(ret, "读取响应失败");
+		mc_log_error(ret, "Read response failed");
 		return ret;
 	}
 
 	if (recv_size < MIN_RESPONSE_HEADER_SIZE) {
 		RELEASE_DATA(response.data);
-		mc_log_error(MC_ERROR_CODE_RESPONSE_HEADER_FAILED, "响应头部长度不足");
+		mc_log_error(MC_ERROR_CODE_RESPONSE_HEADER_FAILED, "Response header length insufficient");
 		return MC_ERROR_CODE_RESPONSE_HEADER_FAILED;
 	}
 
-	// 解析响应
+	// Parse response
 	ret = mc_parse_read_response(response, out_bytes);
 	if (ret == MC_ERROR_CODE_SUCCESS) {
 		extract_actual_bool_data(out_bytes);
 	}
 	else {
-		mc_log_error(ret, "解析读取响应失败");
+		mc_log_error(ret, "Parse read response failed");
 	}
 
 	RELEASE_DATA(response.data);
@@ -182,23 +182,23 @@ mc_error_code_e read_bool_value(int fd, const char* address, int length, byte_ar
 }
 
 /**
- * @brief 读取字数据
- * @param fd 连接描述符
- * @param address 地址字符串
- * @param length 要读取的长度
- * @param out_bytes 输出的字节数组
- * @return 错误码
+ * @brief Read word data
+ * @param fd Connection descriptor
+ * @param address Address string
+ * @param length Length to read
+ * @param out_bytes Output byte array
+ * @return Error code
  */
 mc_error_code_e read_word_value(int fd, const char* address, int length, byte_array_info* out_bytes)
 {
 	if (fd <= 0 || address == NULL || length <= 0 || out_bytes == NULL) {
-		mc_log_error(MC_ERROR_CODE_INVALID_PARAMETER, "读取字数据参数错误: 无效的参数");
+		mc_log_error(MC_ERROR_CODE_INVALID_PARAMETER, "Read word data parameter error: Invalid parameters");
 		return MC_ERROR_CODE_INVALID_PARAMETER;
 	}
 
 	melsec_mc_address_data address_data;
 	if (!mc_analysis_address(address, length, &address_data)) {
-		mc_log_error(MC_ERROR_CODE_PARSE_ADDRESS_FAILED, "解析地址失败: 无效的地址格式");
+		mc_log_error(MC_ERROR_CODE_PARSE_ADDRESS_FAILED, "Parse address failed: Invalid address format");
 		return MC_ERROR_CODE_PARSE_ADDRESS_FAILED;
 	}
 
@@ -206,51 +206,51 @@ mc_error_code_e read_word_value(int fd, const char* address, int length, byte_ar
 }
 
 /**
- * @brief 从指定地址读取数据
- * @param fd 连接描述符
- * @param address_data 已解析的地址数据
- * @param out_bytes 输出的字节数组
- * @return 错误码
+ * @brief Read data from specified address
+ * @param fd Connection descriptor
+ * @param address_data Parsed address data
+ * @param out_bytes Output byte array
+ * @return Error code
  */
 mc_error_code_e read_address_data(int fd, melsec_mc_address_data address_data, byte_array_info* out_bytes)
 {
 	if (fd <= 0 || out_bytes == NULL) {
-		mc_log_error(MC_ERROR_CODE_INVALID_PARAMETER, "读取地址数据参数错误: 无效的参数");
+		mc_log_error(MC_ERROR_CODE_INVALID_PARAMETER, "Read address data parameter error: Invalid parameters");
 		return MC_ERROR_CODE_INVALID_PARAMETER;
 	}
 
 	mc_error_code_e ret = MC_ERROR_CODE_FAILED;
 
-	// 构建读取核心命令
+	// Build read core command
 	byte_array_info core_cmd = build_read_core_command(address_data, false);
 	if (core_cmd.data == NULL) {
-		mc_log_error(MC_ERROR_CODE_BUILD_CORE_CMD_FAILED, "构建核心命令失败: 内存分配错误");
+		mc_log_error(MC_ERROR_CODE_BUILD_CORE_CMD_FAILED, "Build core command failed: Memory allocation error");
 		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
 	}
 
-	// 加锁保护全局网络地址
+	// Lock protection for global network address
 	mc_mutex_lock(&g_connection_mutex);
 	byte_array_info cmd = pack_mc_command(&core_cmd, g_network_address.network_number, g_network_address.station_number);
 	mc_mutex_unlock(&g_connection_mutex);
 
 	RELEASE_DATA(core_cmd.data);
 	if (cmd.data == NULL) {
-		mc_log_error(MC_ERROR_CODE_BUILD_CORE_CMD_FAILED, "打包MC命令失败: 内存分配错误");
+		mc_log_error(MC_ERROR_CODE_BUILD_CORE_CMD_FAILED, "Pack MC command failed: Memory allocation error");
 		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
 	}
 
-	// 获取通信配置
+	// Get communication configuration
 	mc_comm_config_t config;
 	mc_get_comm_config(fd, &config);
 
-	// 发送消息，带重试机制
+	// Send message with retry mechanism
 	bool send_ret = false;
 	for (int i = 0; i <= config.retry_count; i++) {
 		send_ret = mc_try_send_msg(fd, &cmd);
 		if (send_ret) break;
 
 		if (i < config.retry_count) {
-			// 等待重试间隔
+			// Wait for retry interval
 #ifdef _WIN32
 			Sleep(config.retry_interval_ms);
 #else
@@ -261,30 +261,30 @@ mc_error_code_e read_address_data(int fd, melsec_mc_address_data address_data, b
 
 	RELEASE_DATA(cmd.data);
 	if (!send_ret) {
-		mc_log_error(MC_ERROR_CODE_SOCKET_SEND_FAILED, "发送消息失败: 网络错误或连接断开");
+		mc_log_error(MC_ERROR_CODE_SOCKET_SEND_FAILED, "Send message failed: Network error or connection disconnected");
 		return MC_ERROR_CODE_SOCKET_SEND_FAILED;
 	}
 
-	// 接收响应
+	// Receive response
 	byte_array_info response = { 0 };
 	int recv_size = 0;
 	ret = mc_read_response(fd, &response, &recv_size);
 	if (ret != MC_ERROR_CODE_SUCCESS) {
 		RELEASE_DATA(response.data);
-		mc_log_error(ret, "读取响应失败");
+		mc_log_error(ret, "Read response failed");
 		return ret;
 	}
 
 	if (recv_size < MIN_RESPONSE_HEADER_SIZE) {
 		RELEASE_DATA(response.data);
-		mc_log_error(MC_ERROR_CODE_RESPONSE_HEADER_FAILED, "响应头部长度不足");
+		mc_log_error(MC_ERROR_CODE_RESPONSE_HEADER_FAILED, "Response header length insufficient");
 		return MC_ERROR_CODE_RESPONSE_HEADER_FAILED;
 	}
 
-	// 解析响应
+	// Parse response
 	ret = mc_parse_read_response(response, out_bytes);
 	if (ret != MC_ERROR_CODE_SUCCESS) {
-		mc_log_error(ret, "解析读取响应失败");
+		mc_log_error(ret, "Parse read response failed");
 	}
 
 	RELEASE_DATA(response.data);
@@ -293,60 +293,60 @@ mc_error_code_e read_address_data(int fd, melsec_mc_address_data address_data, b
 
 //////////////////////////////////////////////////////////////////////////
 /**
- * @brief 写入布尔数组值
- * @param fd 连接描述符
- * @param address 地址字符串
- * @param length 要写入的长度
- * @param in_bytes 输入的布尔数组
- * @return 错误码
+ * @brief Write boolean array values
+ * @param fd Connection descriptor
+ * @param address Address string
+ * @param length Length to write
+ * @param in_bytes Input boolean array
+ * @return Error code
  */
 mc_error_code_e write_bool_value(int fd, const char* address, int length, bool_array_info in_bytes)
 {
 	if (fd <= 0 || address == NULL || length <= 0 || in_bytes.data == NULL) {
-		mc_log_error(MC_ERROR_CODE_INVALID_PARAMETER, "写入布尔值参数错误: 无效的参数");
+		mc_log_error(MC_ERROR_CODE_INVALID_PARAMETER, "Write boolean value parameter error: Invalid parameters");
 		return MC_ERROR_CODE_INVALID_PARAMETER;
 	}
 
 	mc_error_code_e ret = MC_ERROR_CODE_FAILED;
 	melsec_mc_address_data address_data;
 
-	// 解析地址
+	// Parse address
 	if (!mc_analysis_address(address, length, &address_data)) {
-		mc_log_error(MC_ERROR_CODE_PARSE_ADDRESS_FAILED, "解析地址失败: 无效的地址格式");
+		mc_log_error(MC_ERROR_CODE_PARSE_ADDRESS_FAILED, "Parse address failed: Invalid address format");
 		return MC_ERROR_CODE_PARSE_ADDRESS_FAILED;
 	}
 
-	// 构建写入核心命令
+	// Build write core command
 	byte_array_info core_cmd = build_write_bit_core_command(address_data, in_bytes);
-	RELEASE_DATA(in_bytes.data); // 释放输入数据
+	RELEASE_DATA(in_bytes.data); // Release input data
 	if (core_cmd.data == NULL) {
-		mc_log_error(MC_ERROR_CODE_BUILD_CORE_CMD_FAILED, "构建核心命令失败: 内存分配错误");
+		mc_log_error(MC_ERROR_CODE_BUILD_CORE_CMD_FAILED, "Build core command failed: Memory allocation error");
 		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
 	}
 
-	// 加锁保护全局网络地址
+	// Lock protection for global network address
 	mc_mutex_lock(&g_connection_mutex);
 	byte_array_info cmd = pack_mc_command(&core_cmd, g_network_address.network_number, g_network_address.station_number);
 	mc_mutex_unlock(&g_connection_mutex);
 
 	RELEASE_DATA(core_cmd.data);
 	if (cmd.data == NULL) {
-		mc_log_error(MC_ERROR_CODE_BUILD_CORE_CMD_FAILED, "打包MC命令失败: 内存分配错误");
+		mc_log_error(MC_ERROR_CODE_BUILD_CORE_CMD_FAILED, "Pack MC command failed: Memory allocation error");
 		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
 	}
 
-	// 获取通信配置
+	// Get communication configuration
 	mc_comm_config_t config;
 	mc_get_comm_config(fd, &config);
 
-	// 发送消息，带重试机制
+	// Send message with retry mechanism
 	bool send_ret = false;
 	for (int i = 0; i <= config.retry_count; i++) {
 		send_ret = mc_try_send_msg(fd, &cmd);
 		if (send_ret) break;
 
 		if (i < config.retry_count) {
-			// 等待重试间隔
+			// Wait for retry interval
 #ifdef _WIN32
 			Sleep(config.retry_interval_ms);
 #else
@@ -357,30 +357,30 @@ mc_error_code_e write_bool_value(int fd, const char* address, int length, bool_a
 
 	RELEASE_DATA(cmd.data);
 	if (!send_ret) {
-		mc_log_error(MC_ERROR_CODE_SOCKET_SEND_FAILED, "发送消息失败: 网络错误或连接断开");
+		mc_log_error(MC_ERROR_CODE_SOCKET_SEND_FAILED, "Send message failed: Network error or connection disconnected");
 		return MC_ERROR_CODE_SOCKET_SEND_FAILED;
 	}
 
-	// 接收响应
+	// Receive response
 	byte_array_info response = { 0 };
 	int recv_size = 0;
 	ret = mc_read_response(fd, &response, &recv_size);
 	if (ret != MC_ERROR_CODE_SUCCESS) {
 		RELEASE_DATA(response.data);
-		mc_log_error(ret, "读取响应失败");
+		mc_log_error(ret, "Read response failed");
 		return ret;
 	}
 
 	if (recv_size < MIN_RESPONSE_HEADER_SIZE) {
 		RELEASE_DATA(response.data);
-		mc_log_error(MC_ERROR_CODE_RESPONSE_HEADER_FAILED, "响应头部长度不足");
+		mc_log_error(MC_ERROR_CODE_RESPONSE_HEADER_FAILED, "Response header length insufficient");
 		return MC_ERROR_CODE_RESPONSE_HEADER_FAILED;
 	}
 
-	// 解析响应
+	// Parse response
 	ret = mc_parse_write_response(response, NULL);
 	if (ret != MC_ERROR_CODE_SUCCESS) {
-		mc_log_error(ret, "解析写入响应失败");
+		mc_log_error(ret, "Parse write response failed");
 	}
 
 	RELEASE_DATA(response.data);
@@ -388,12 +388,12 @@ mc_error_code_e write_bool_value(int fd, const char* address, int length, bool_a
 }
 
 /**
- * @brief 写入字数据
- * @param fd 连接描述符
- * @param address 地址字符串
- * @param length 要写入的长度
- * @param in_bytes 输入的字节数组
- * @return 错误码
+ * @brief Write word data
+ * @param fd Connection descriptor
+ * @param address Address string
+ * @param length Length to write
+ * @param in_bytes Input byte array
+ * @return Error code
  */
 mc_error_code_e write_word_value(int fd, const char* address, int length, byte_array_info in_bytes)
 {
@@ -411,7 +411,7 @@ mc_error_code_e write_address_data(int fd, melsec_mc_address_data address_data, 
 	if (core_cmd.data == NULL)
 		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
 
-	// 加锁保护全局网络地址
+	// Lock protection for global network address
 	mc_mutex_lock(&g_connection_mutex);
 	byte_array_info cmd = pack_mc_command(&core_cmd, g_network_address.network_number, g_network_address.station_number);
 	mc_mutex_unlock(&g_connection_mutex);
@@ -422,30 +422,30 @@ mc_error_code_e write_address_data(int fd, melsec_mc_address_data address_data, 
 	bool send_ret = mc_try_send_msg(fd, &cmd);
 	RELEASE_DATA(cmd.data);
 	if (!send_ret) {
-		mc_log_error(MC_ERROR_CODE_SOCKET_SEND_FAILED, "发送消息失败: 网络错误或连接断开");
+		mc_log_error(MC_ERROR_CODE_SOCKET_SEND_FAILED, "Send message failed: Network error or connection disconnected");
 		return MC_ERROR_CODE_SOCKET_SEND_FAILED;
 	}
 
-	// 接收响应
+	// Receive response
 	byte_array_info response = { 0 };
 	int recv_size = 0;
 	ret = mc_read_response(fd, &response, &recv_size);
 	if (ret != MC_ERROR_CODE_SUCCESS) {
 		RELEASE_DATA(response.data);
-		mc_log_error(ret, "读取响应失败");
+		mc_log_error(ret, "Read response failed");
 		return ret;
 	}
 
 	if (recv_size < MIN_RESPONSE_HEADER_SIZE) {
 		RELEASE_DATA(response.data);
-		mc_log_error(MC_ERROR_CODE_RESPONSE_HEADER_FAILED, "远程运行PLC失败: 响应头部长度不足");
+		mc_log_error(MC_ERROR_CODE_RESPONSE_HEADER_FAILED, "Remote PLC run failed: Response header length insufficient");
 		return MC_ERROR_CODE_RESPONSE_HEADER_FAILED;
 	}
 
-	// 解析响应
+	// Parse response
 	ret = mc_parse_write_response(response, NULL);
 	if (ret != MC_ERROR_CODE_SUCCESS) {
-		mc_log_error(ret, "解析写入响应失败");
+		mc_log_error(ret, "Parse write response failed");
 	}
 
 	RELEASE_DATA(response.data);
@@ -453,61 +453,61 @@ mc_error_code_e write_address_data(int fd, melsec_mc_address_data address_data, 
 }
 
 /**
- * @brief 远程运行PLC
- * @param fd 连接描述符
- * @return 错误码
+ * @brief Remote run PLC
+ * @param fd Connection descriptor
+ * @return Error code
  */
 mc_error_code_e mc_remote_run(int fd)
 {
 	if (fd <= 0) {
-		mc_log_error(MC_ERROR_CODE_INVALID_PARAMETER, "远程运行PLC参数错误: 无效的连接描述符");
+		mc_log_error(MC_ERROR_CODE_INVALID_PARAMETER, "Remote run PLC parameter error: Invalid connection descriptor");
 		return MC_ERROR_CODE_INVALID_PARAMETER;
 	}
 
 	mc_error_code_e ret = MC_ERROR_CODE_FAILED;
 
-	// 准备远程运行命令
+	// Prepare remote run command
 	byte core_cmd_temp[] = { 0x01, 0x10, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 };
 	int core_cmd_len = sizeof(core_cmd_temp) / sizeof(core_cmd_temp[0]);
 
-	// 分配内存
+	// Allocate memory
 	byte* core_cmd = (byte*)malloc(core_cmd_len);
 	if (core_cmd == NULL) {
-		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "远程运行PLC失败: 内存分配错误");
+		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "Remote run PLC failed: Memory allocation error");
 		return MC_ERROR_CODE_MALLOC_FAILED;
 	}
 
-	// 复制命令数据
+	// Copy command data
 	memcpy(core_cmd, core_cmd_temp, core_cmd_len);
 
-	// 准备命令信息
+	// Prepare command information
 	byte_array_info temp_info = { 0 };
 	temp_info.data = core_cmd;
 	temp_info.length = core_cmd_len;
 
-	// 加锁保护全局网络地址
+	// Lock protection for global network address
 	mc_mutex_lock(&g_connection_mutex);
 	byte_array_info cmd = pack_mc_command(&temp_info, g_network_address.network_number, g_network_address.station_number);
 	mc_mutex_unlock(&g_connection_mutex);
 
 	RELEASE_DATA(core_cmd);
 	if (cmd.data == NULL) {
-		mc_log_error(MC_ERROR_CODE_BUILD_CORE_CMD_FAILED, "远程运行PLC失败: 打包命令失败");
+		mc_log_error(MC_ERROR_CODE_BUILD_CORE_CMD_FAILED, "Remote PLC run failed: Command packaging failed");
 		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
 	}
 
-	// 获取通信配置
+	// Get communication configuration
 	mc_comm_config_t config;
 	mc_get_comm_config(fd, &config);
 
-	// 发送消息，带重试机制
+	// Send message with retry mechanism
 	bool send_ret = false;
 	for (int i = 0; i <= config.retry_count; i++) {
 		send_ret = mc_try_send_msg(fd, &cmd);
 		if (send_ret) break;
 
 		if (i < config.retry_count) {
-			// 等待重试间隔
+			// Wait for retry interval
 #ifdef _WIN32
 			Sleep(config.retry_interval_ms);
 #else
@@ -518,30 +518,30 @@ mc_error_code_e mc_remote_run(int fd)
 
 	RELEASE_DATA(cmd.data);
 	if (!send_ret) {
-		mc_log_error(MC_ERROR_CODE_SOCKET_SEND_FAILED, "远程运行PLC失败: 发送命令失败");
+		mc_log_error(MC_ERROR_CODE_SOCKET_SEND_FAILED, "Remote PLC run failed: Command sending failed");
 		return MC_ERROR_CODE_SOCKET_SEND_FAILED;
 	}
 
-	// 接收响应
+	// Receive response
 	byte_array_info response = { 0 };
 	int recv_size = 0;
 	ret = mc_read_response(fd, &response, &recv_size);
 	if (ret != MC_ERROR_CODE_SUCCESS) {
 		RELEASE_DATA(response.data);
-		mc_log_error(ret, "远程运行PLC失败: 读取响应失败");
+		mc_log_error(ret, "Remote run PLC failed: Read response failed");
 		return ret;
 	}
 
 	if (recv_size < MIN_RESPONSE_HEADER_SIZE) {
 		RELEASE_DATA(response.data);
-		mc_log_error(MC_ERROR_CODE_RESPONSE_HEADER_FAILED, "远程运行PLC失败: 响应头部长度不足");
+		mc_log_error(MC_ERROR_CODE_RESPONSE_HEADER_FAILED, "Remote PLC run failed: Response header length insufficient");
 		return MC_ERROR_CODE_RESPONSE_HEADER_FAILED;
 	}
 
-	// 解析响应
+	// Parse response
 	ret = mc_parse_write_response(response, NULL);
 	if (ret != MC_ERROR_CODE_SUCCESS) {
-		mc_log_error(ret, "解析写入响应失败");
+		mc_log_error(ret, "Parse write response failed");
 	}
 
 	RELEASE_DATA(response.data);
@@ -568,30 +568,30 @@ mc_error_code_e mc_remote_stop(int fd)
 	bool send_ret = mc_try_send_msg(fd, &cmd);
 	RELEASE_DATA(cmd.data);
 	if (!send_ret) {
-		mc_log_error(MC_ERROR_CODE_SOCKET_SEND_FAILED, "发送消息失败: 网络错误或连接断开");
+		mc_log_error(MC_ERROR_CODE_SOCKET_SEND_FAILED, "Send message failed: Network error or connection disconnected");
 		return MC_ERROR_CODE_SOCKET_SEND_FAILED;
 	}
 
-	// 接收响应
+	// Receive response
 	byte_array_info response = { 0 };
 	int recv_size = 0;
 	ret = mc_read_response(fd, &response, &recv_size);
 	if (ret != MC_ERROR_CODE_SUCCESS) {
 		RELEASE_DATA(response.data);
-		mc_log_error(ret, "读取响应失败");
+		mc_log_error(ret, "Read response failed");
 		return ret;
 	}
 
 	if (recv_size < MIN_RESPONSE_HEADER_SIZE) {
 		RELEASE_DATA(response.data);
-		mc_log_error(MC_ERROR_CODE_RESPONSE_HEADER_FAILED, "远程运行PLC失败: 响应头部长度不足");
+		mc_log_error(MC_ERROR_CODE_RESPONSE_HEADER_FAILED, "Remote PLC run failed: Response header length insufficient");
 		return MC_ERROR_CODE_RESPONSE_HEADER_FAILED;
 	}
 
-	// 解析响应
+	// Parse response
 	ret = mc_parse_write_response(response, NULL);
 	if (ret != MC_ERROR_CODE_SUCCESS) {
-		mc_log_error(ret, "解析写入响应失败");
+		mc_log_error(ret, "Parse write response failed");
 	}
 
 	RELEASE_DATA(response.data);
@@ -599,61 +599,61 @@ mc_error_code_e mc_remote_stop(int fd)
 }
 
 /**
- * @brief 远程复位PLC
- * @param fd 连接描述符
- * @return 错误码
+ * @brief Remote reset PLC
+ * @param fd Connection descriptor
+ * @return Error code
  */
 mc_error_code_e mc_remote_reset(int fd)
 {
 	if (fd <= 0) {
-		mc_log_error(MC_ERROR_CODE_INVALID_PARAMETER, "远程复位PLC参数错误: 无效的连接描述符");
+		mc_log_error(MC_ERROR_CODE_INVALID_PARAMETER, "Remote reset PLC parameter error: Invalid connection descriptor");
 		return MC_ERROR_CODE_INVALID_PARAMETER;
 	}
 
 	mc_error_code_e ret = MC_ERROR_CODE_FAILED;
 
-	// 准备远程复位命令
+	// Prepare remote reset command
 	byte core_cmd_temp[] = { 0x06, 0x10, 0x00, 0x00, 0x01, 0x00 };
 	int core_cmd_len = sizeof(core_cmd_temp) / sizeof(core_cmd_temp[0]);
 
-	// 分配内存
+	// Allocate memory
 	byte* core_cmd = (byte*)malloc(core_cmd_len);
 	if (core_cmd == NULL) {
-		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "远程复位PLC失败: 内存分配错误");
+		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "Remote reset PLC failed: Memory allocation error");
 		return MC_ERROR_CODE_MALLOC_FAILED;
 	}
 
-	// 复制命令数据
+	// Copy command data
 	memcpy(core_cmd, core_cmd_temp, core_cmd_len);
 
-	// 准备命令信息
+	// Prepare command information
 	byte_array_info temp_info = { 0 };
 	temp_info.data = core_cmd;
 	temp_info.length = core_cmd_len;
 
-	// 加锁保护全局网络地址
+	// Lock protection for global network address
 	mc_mutex_lock(&g_connection_mutex);
 	byte_array_info cmd = pack_mc_command(&temp_info, g_network_address.network_number, g_network_address.station_number);
 	mc_mutex_unlock(&g_connection_mutex);
 
 	RELEASE_DATA(core_cmd);
 	if (cmd.data == NULL) {
-		mc_log_error(MC_ERROR_CODE_BUILD_CORE_CMD_FAILED, "远程复位PLC失败: 打包命令失败");
+		mc_log_error(MC_ERROR_CODE_BUILD_CORE_CMD_FAILED, "Remote PLC reset failed: Command packaging failed");
 		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
 	}
 
-	// 获取通信配置
+	// Get communication configuration
 	mc_comm_config_t config;
 	mc_get_comm_config(fd, &config);
 
-	// 发送消息，带重试机制
+	// Send message with retry mechanism
 	bool send_ret = false;
 	for (int i = 0; i <= config.retry_count; i++) {
 		send_ret = mc_try_send_msg(fd, &cmd);
 		if (send_ret) break;
 
 		if (i < config.retry_count) {
-			// 等待重试间隔
+			// Wait for retry interval
 #ifdef _WIN32
 			Sleep(config.retry_interval_ms);
 #else
@@ -664,30 +664,30 @@ mc_error_code_e mc_remote_reset(int fd)
 
 	RELEASE_DATA(cmd.data);
 	if (!send_ret) {
-		mc_log_error(MC_ERROR_CODE_SOCKET_SEND_FAILED, "远程复位PLC失败: 发送命令失败");
+		mc_log_error(MC_ERROR_CODE_SOCKET_SEND_FAILED, "Remote PLC reset failed: Command sending failed");
 		return MC_ERROR_CODE_SOCKET_SEND_FAILED;
 	}
 
-	// 接收响应
+	// Receive response
 	byte_array_info response = { 0 };
 	int recv_size = 0;
 	ret = mc_read_response(fd, &response, &recv_size);
 	if (ret != MC_ERROR_CODE_SUCCESS) {
 		RELEASE_DATA(response.data);
-		mc_log_error(ret, "远程复位PLC失败: 读取响应失败");
+		mc_log_error(ret, "Remote reset PLC failed: Read response failed");
 		return ret;
 	}
 
 	if (recv_size < MIN_RESPONSE_HEADER_SIZE) {
 		RELEASE_DATA(response.data);
-		mc_log_error(MC_ERROR_CODE_RESPONSE_HEADER_FAILED, "远程复位PLC失败: 响应头部长度不足");
+		mc_log_error(MC_ERROR_CODE_RESPONSE_HEADER_FAILED, "Remote PLC reset failed: Response header length insufficient");
 		return MC_ERROR_CODE_RESPONSE_HEADER_FAILED;
 	}
 
-	// 解析响应
+	// Parse response
 	ret = mc_parse_write_response(response, NULL);
 	if (ret != MC_ERROR_CODE_SUCCESS) {
-		mc_log_error(ret, "远程复位PLC失败: 解析响应失败");
+		mc_log_error(ret, "Remote PLC reset failed: Response parsing failed");
 	}
 
 	RELEASE_DATA(response.data);
@@ -695,15 +695,15 @@ mc_error_code_e mc_remote_reset(int fd)
 }
 
 /**
- * @brief 读取PLC类型
- * @param fd 连接描述符
- * @param type 输出的PLC类型字符串
- * @return 错误码
+ * @brief Read PLC type
+ * @param fd Connection descriptor
+ * @param type Output PLC type string
+ * @return Error code
  */
 mc_error_code_e mc_read_plc_type(int fd, char** type)
 {
 	if (fd <= 0 || type == NULL) {
-		mc_log_error(MC_ERROR_CODE_INVALID_PARAMETER, "读取PLC类型参数错误: 无效的参数");
+		mc_log_error(MC_ERROR_CODE_INVALID_PARAMETER, "Read PLC type parameter error: Invalid parameters");
 		return MC_ERROR_CODE_INVALID_PARAMETER;
 	}
 
@@ -711,48 +711,48 @@ mc_error_code_e mc_read_plc_type(int fd, char** type)
 	byte_array_info out_bytes;
 	memset(&out_bytes, 0, sizeof(out_bytes));
 
-	// 准备读取PLC类型命令
+	// Prepare read PLC type command
 	byte core_cmd_temp[] = { 0x01, 0x01, 0x00, 0x00, 0x01, 0x00 };
 	int core_cmd_len = sizeof(core_cmd_temp) / sizeof(core_cmd_temp[0]);
 
-	// 分配内存
+	// Allocate memory
 	byte* core_cmd = (byte*)malloc(core_cmd_len);
 	if (core_cmd == NULL) {
-		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "读取PLC类型失败: 内存分配错误");
+		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "Read PLC type failed: Memory allocation error");
 		return MC_ERROR_CODE_MALLOC_FAILED;
 	}
 
-	// 复制命令数据
+	// Copy command data
 	memcpy(core_cmd, core_cmd_temp, core_cmd_len);
 
-	// 准备命令信息
+	// Prepare command information
 	byte_array_info temp_info = { 0 };
 	temp_info.data = core_cmd;
 	temp_info.length = core_cmd_len;
 
-	// 加锁保护全局网络地址
+	// Lock protection for global network address
 	mc_mutex_lock(&g_connection_mutex);
 	byte_array_info cmd = pack_mc_command(&temp_info, g_network_address.network_number, g_network_address.station_number);
 	mc_mutex_unlock(&g_connection_mutex);
 
 	RELEASE_DATA(core_cmd);
 	if (cmd.data == NULL) {
-		mc_log_error(MC_ERROR_CODE_BUILD_CORE_CMD_FAILED, "读取PLC类型失败: 打包命令失败");
+		mc_log_error(MC_ERROR_CODE_BUILD_CORE_CMD_FAILED, "Read PLC type failed: Pack command failed");
 		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
 	}
 
-	// 获取通信配置
+	// Get communication configuration
 	mc_comm_config_t config;
 	mc_get_comm_config(fd, &config);
 
-	// 发送消息，带重试机制
+	// Send message with retry mechanism
 	bool send_ret = false;
 	for (int i = 0; i <= config.retry_count; i++) {
 		send_ret = mc_try_send_msg(fd, &cmd);
 		if (send_ret) break;
 
 		if (i < config.retry_count) {
-			// 等待重试间隔
+			// Wait for retry interval
 #ifdef _WIN32
 			Sleep(config.retry_interval_ms);
 #else
@@ -763,7 +763,7 @@ mc_error_code_e mc_read_plc_type(int fd, char** type)
 
 	RELEASE_DATA(cmd.data);
 	if (!send_ret) {
-		mc_log_error(MC_ERROR_CODE_SOCKET_SEND_FAILED, "读取PLC类型失败: 发送命令失败");
+		mc_log_error(MC_ERROR_CODE_SOCKET_SEND_FAILED, "Read PLC type failed: Send command failed");
 		return MC_ERROR_CODE_SOCKET_SEND_FAILED;
 	}
 
@@ -772,51 +772,51 @@ mc_error_code_e mc_read_plc_type(int fd, char** type)
 //
 
 /**
- * @brief 打包MC协议命令
- * @param mc_core 核心命令数据
- * @param network_number 网络号
- * @param station_number 站号
- * @return 打包后的命令数据
+ * @brief Package MC protocol command
+ * @param mc_core Core command data
+ * @param network_number Network number
+ * @param station_number Station number
+ * @return Packaged command data
  */
 byte_array_info pack_mc_command(byte_array_info* mc_core, byte network_number, byte station_number)
 {
 	if (mc_core == NULL || mc_core->data == NULL || mc_core->length <= 0) {
-		mc_log_error(MC_ERROR_CODE_INVALID_PARAMETER, "打包MC命令参数错误: 无效的核心命令数据");
+		mc_log_error(MC_ERROR_CODE_INVALID_PARAMETER, "Pack MC command parameter error: Invalid core command data");
 		byte_array_info empty_ret = { 0 };
 		return empty_ret;
 	}
 
 	int core_len = mc_core->length;
-	int cmd_len = core_len + 11; // 核心命令 + 头部命令
+	int cmd_len = core_len + 11; // Core command + header command
 
-	// 分配内存
+	// Allocate memory
 	byte* command = (byte*)malloc(cmd_len);
 	if (command == NULL) {
-		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "打包MC命令失败: 内存分配错误");
+		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "Pack MC command failed: Memory allocation error");
 		byte_array_info empty_ret = { 0 };
 		return empty_ret;
 	}
 
-	// 初始化内存
+	// Initialize memory
 	memset(command, 0, cmd_len);
 
-	// 填充命令头部
-	command[0] = 0x50; // 固定头
-	command[1] = 0x00; // 固定头
-	command[2] = network_number; // 网络号
-	command[3] = 0xFF; // PLC编号
-	command[4] = 0xFF; // 请求目标模块IO编号
-	command[5] = 0x03; // 请求目标模块站号
-	command[6] = station_number; // 请求数据长度
-	command[7] = (byte)(cmd_len - 9); // 数据长度低字节
-	command[8] = (byte)((cmd_len - 9) >> 8); // 数据长度高字节
-	command[9] = 0x0A; // CPU监视定时器
-	command[10] = 0x00; // CPU监视定时器
+	// Fill command header
+	command[0] = 0x50; // Fixed header
+	command[1] = 0x00; // Fixed header
+	command[2] = network_number; // Network number
+	command[3] = 0xFF; // PLC number
+	command[4] = 0xFF; // Request target module IO number
+	command[5] = 0x03; // Request target module station number
+	command[6] = station_number; // Request data length
+	command[7] = (byte)(cmd_len - 9); // Data length low byte
+	command[8] = (byte)((cmd_len - 9) >> 8); // Data length high byte
+	command[9] = 0x0A; // CPU monitoring timer
+	command[10] = 0x00; // CPU monitoring timer
 
-	// 复制核心命令数据
+	// Copy core command data
 	memcpy(command + 11, mc_core->data, mc_core->length);
 
-	// 返回结果
+	// Return result
 	byte_array_info ret = { 0 };
 	ret.data = command;
 	ret.length = cmd_len;
@@ -825,65 +825,65 @@ byte_array_info pack_mc_command(byte_array_info* mc_core, byte network_number, b
 }
 
 /**
- * @brief 提取实际的布尔数据
- * @param response 响应数据，将被修改为实际的布尔数据
+ * @brief Extract actual boolean data
+ * @param response Response data, will be modified to actual boolean data
  */
 void extract_actual_bool_data(byte_array_info* response)
 {
 	if (response == NULL || response->data == NULL || response->length <= 0) {
-		mc_log_error(MC_ERROR_CODE_INVALID_PARAMETER, "提取布尔数据参数错误: 无效的响应数据");
+		mc_log_error(MC_ERROR_CODE_INVALID_PARAMETER, "Extract boolean data parameter error: Invalid response data");
 		return;
 	}
 
-	// 计算结果长度并分配内存
+	// Calculate result length and allocate memory
 	int resp_len = response->length * 2;
 	byte* content = (byte*)malloc(resp_len);
 	if (content == NULL) {
-		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "提取布尔数据失败: 内存分配错误");
-		// 不释放原始数据，保持原样返回
+		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "Extract boolean data failed: Memory allocation error");
+		// Do not release original data, return as is
 		return;
 	}
 
-	// 初始化内存
+	// Initialize memory
 	memset(content, 0, resp_len);
 
-	// 提取布尔值
+	// Extract boolean values
 	for (int i = 0; i < response->length; i++) {
-		// 检查高位
+		// Check high bits
 		if ((response->data[i] & 0x10) == 0x10) {
 			content[i * 2 + 0] = 0x01;
 		}
 
-		// 检查低位
+		// Check low bits
 		if ((response->data[i] & 0x01) == 0x01) {
 			content[i * 2 + 1] = 0x01;
 		}
 	}
 
-	// 释放原始数据并更新响应
+	// Release original data and update response
 	RELEASE_DATA(response->data);
 	response->data = content;
 	response->length = resp_len;
 }
 
 /**
- * @brief 读取PLC响应
- * @param fd 连接描述符
- * @param response 响应数据缓冲区
- * @param read_count 实际读取的字节数
- * @return 错误码
+ * @brief Read PLC response
+ * @param fd Connection descriptor
+ * @param response Response data
+ * @param read_count Actual bytes read
+ * @return Error code
  */
 mc_error_code_e mc_read_response(int fd, byte_array_info* response, int* read_count)
 {
 	if (fd <= 0 || read_count == NULL || response == NULL) {
-		mc_log_error(MC_ERROR_CODE_INVALID_PARAMETER, "读取响应参数错误: 无效的参数");
+		mc_log_error(MC_ERROR_CODE_INVALID_PARAMETER, "Read response parameter error: Invalid parameters");
 		return MC_ERROR_CODE_INVALID_PARAMETER;
 	}
 
-	// 分配内存
+	// Allocate memory
 	byte* temp = (byte*)malloc(BUFFER_SIZE);
 	if (temp == NULL) {
-		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "分配内存失败: 无法为响应数据分配内存");
+		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "Memory allocation failed: Unable to allocate memory for response data");
 		return MC_ERROR_CODE_MALLOC_FAILED;
 	}
 
@@ -894,20 +894,20 @@ mc_error_code_e mc_read_response(int fd, byte_array_info* response, int* read_co
 	*read_count = 0;
 	char* ptr = (char*)response->data;
 
-	// 获取通信配置
+	// Get communication configuration
 	mc_comm_config_t config;
 	mc_get_comm_config(fd, &config);
 
-	// 接收数据
+	// Receive data
 	*read_count = (int)recv(fd, ptr, response->length, 0);
 	if (*read_count < 0) {
 		RELEASE_DATA(response->data);
-		mc_log_error(MC_ERROR_CODE_SOCKET_RECV_FAILED, "接收数据失败: 网络错误或连接断开");
+		mc_log_error(MC_ERROR_CODE_SOCKET_RECV_FAILED, "Receive data failed: Network error or connection disconnected");
 		return MC_ERROR_CODE_SOCKET_RECV_FAILED;
 	}
 	else if (*read_count == 0) {
 		RELEASE_DATA(response->data);
-		mc_log_error(MC_ERROR_CODE_CONNECTION_CLOSED, "连接已关闭: 远程设备关闭了连接");
+		mc_log_error(MC_ERROR_CODE_CONNECTION_CLOSED, "Connection closed: Remote device closed the connection");
 		return MC_ERROR_CODE_CONNECTION_CLOSED;
 	}
 
