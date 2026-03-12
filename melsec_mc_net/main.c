@@ -1,302 +1,329 @@
 #ifdef _WIN32
 #include <WinSock2.h>
 #else
-#include <unistd.h>
-#endif
-#include <stdio.h>
-#include <stdlib.h>
-#pragma warning(disable : 4996)
-
-#define GET_RESULT(ret)     \
-	{                       \
-		if (!ret)           \
-			failed_count++; \
-	}
-
-// #define USE_SO
-#ifndef USE_SO
-#include "melsec_mc_bin.h"
-#include "melsec_mc_ascii.h"
-#endif
-
-#ifdef USE_SO
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <unistd.h>
-#include <errno.h>
-#include <arpa/inet.h>
-#include <memory.h>
-#include <dlfcn.h>
-#include <ctype.h>
+#include <pthread.h>
 #include <time.h>
-#include <stdbool.h>
-
-#include "typedef.h"
-
-typedef bool (*pmc_mc_connect)(char* ip_addr, int port, byte network_addr, byte station_addr);
-typedef bool (*pmc_mc_disconnect)(int fd);
-
-typedef bool (*pmc_write_bool)(int fd, const char* address, bool val); // write
-typedef bool (*pmc_write_short)(int fd, const char* address, short val);
-typedef bool (*pmc_write_ushort)(int fd, const char* address, ushort val);
-typedef bool (*pmc_write_int32)(int fd, const char* address, int32 val);
-typedef bool (*pmc_write_uint32)(int fd, const char* address, uint32 val);
-typedef bool (*pmc_write_int64)(int fd, const char* address, int64 val);
-typedef bool (*pmc_write_uint64)(int fd, const char* address, uint64 val);
-typedef bool (*pmc_write_float)(int fd, const char* address, float val);
-typedef bool (*pmc_write_double)(int fd, const char* address, double val);
-typedef bool (*pmc_write_string)(int fd, const char* address, int length, const char* val);
-
-typedef bool (*pmc_read_bool)(int fd, const char* address, bool* val); // read
-typedef bool (*pmc_read_short)(int fd, const char* address, short* val);
-typedef bool (*pmc_read_ushort)(int fd, const char* address, ushort* val);
-typedef bool (*pmc_read_int32)(int fd, const char* address, int32* val);
-typedef bool (*pmc_read_uint32)(int fd, const char* address, uint32* val);
-typedef bool (*pmc_read_int64)(int fd, const char* address, int64* val);
-typedef bool (*pmc_read_uint64)(int fd, const char* address, uint64* val);
-typedef bool (*pmc_read_float)(int fd, const char* address, float* val);
-typedef bool (*pmc_read_double)(int fd, const char* address, double* val);
-typedef bool (*pmc_read_string)(int fd, const char* address, int length, const char* val);
-
-pmc_mc_connect mc_connect;
-pmc_mc_disconnect mc_disconnect;
-
-pmc_write_bool mc_write_bool;
-pmc_write_short mc_write_short;
-pmc_write_ushort mc_write_ushort;
-pmc_write_int32 mc_write_int32;
-pmc_write_uint32 mc_write_uint32;
-pmc_write_int64 mc_write_int64;
-pmc_write_uint64 mc_write_uint64;
-pmc_write_float mc_write_float;
-pmc_write_double mc_write_double;
-pmc_write_string mc_write_string;
-
-pmc_read_bool mc_read_bool;
-pmc_read_short mc_read_short;
-pmc_read_ushort mc_read_ushort;
-pmc_read_int32 mc_read_int32;
-pmc_read_uint32 mc_read_uint32;
-pmc_read_int64 mc_read_int64;
-pmc_read_uint64 mc_read_uint64;
-pmc_read_float mc_read_float;
-pmc_read_double mc_read_double;
-pmc_read_string mc_read_string;
-
-void libso_fun(char* szdllpath)
-{
-	void* handle_so;
-	handle_so = dlopen(szdllpath, RTLD_NOW);
-	if (!handle_so)
-	{
-		printf("%s\n", dlerror());
-	}
-
-	mc_connect = (pmc_mc_connect)dlsym(handle_so, "mc_connect");
-	mc_disconnect = (pmc_mc_disconnect)dlsym(handle_so, "mc_disconnect");
-
-	mc_write_bool = (pmc_write_bool)dlsym(handle_so, "mc_write_bool");
-	mc_write_short = (pmc_write_short)dlsym(handle_so, "mc_write_short");
-	mc_write_ushort = (pmc_write_ushort)dlsym(handle_so, "mc_write_ushort");
-	mc_write_int32 = (pmc_write_int32)dlsym(handle_so, "mc_write_int32");
-	mc_write_uint32 = (pmc_write_uint32)dlsym(handle_so, "mc_write_uint32");
-	mc_write_int64 = (pmc_write_int64)dlsym(handle_so, "mc_write_int64");
-	mc_write_uint64 = (pmc_write_uint64)dlsym(handle_so, "mc_write_uint64");
-	mc_write_float = (pmc_write_float)dlsym(handle_so, "mc_write_float");
-	mc_write_double = (pmc_write_double)dlsym(handle_so, "mc_write_double");
-	mc_write_string = (pmc_write_string)dlsym(handle_so, "mc_write_string");
-
-	mc_read_bool = (pmc_read_bool)dlsym(handle_so, "mc_read_bool");
-	mc_read_short = (pmc_read_short)dlsym(handle_so, "mc_read_short");
-	mc_read_ushort = (pmc_read_ushort)dlsym(handle_so, "mc_read_ushort");
-	mc_read_int32 = (pmc_read_int32)dlsym(handle_so, "mc_read_int32");
-	mc_read_uint32 = (pmc_read_uint32)dlsym(handle_so, "mc_read_uint32");
-	mc_read_int64 = (pmc_read_int64)dlsym(handle_so, "mc_read_int64");
-	mc_read_uint64 = (pmc_read_uint64)dlsym(handle_so, "mc_read_uint64");
-	mc_read_float = (pmc_read_float)dlsym(handle_so, "mc_read_float");
-	mc_read_double = (pmc_read_double)dlsym(handle_so, "mc_read_double");
-	mc_read_string = (pmc_read_string)dlsym(handle_so, "mc_read_string");
-	return;
-}
+#include <unistd.h>
 #endif
+
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "melsec_mc_bin.h"
+#include "network_init.h"
+
+typedef struct {
+    int fd;
+    int thread_id;
+    int iterations;
+    char d_addr[32];
+    char m_addr[32];
+
+    long api_calls;
+    long checks;
+    long mismatches;
+    long io_errors;
+} stress_worker_arg_t;
+
+typedef struct {
+    long api_calls;
+    long checks;
+    long mismatches;
+    long io_errors;
+    double elapsed_sec;
+} stress_summary_t;
+
+#ifdef _WIN32
+typedef HANDLE mc_thread_t;
+static DWORD WINAPI stress_worker_thread(LPVOID param)
+#else
+typedef pthread_t mc_thread_t;
+static void* stress_worker_thread(void* param)
+#endif
+{
+    stress_worker_arg_t* arg = (stress_worker_arg_t*)param;
+
+    for (int i = 0; i < arg->iterations; i++) {
+        int32 write_d = (int32)((arg->thread_id << 20) ^ i);
+        int32 read_d = 0;
+        bool write_m = ((i & 1) != 0);
+        bool read_m = false;
+
+        mc_error_code_e ret = mc_write_int32(arg->fd, arg->d_addr, write_d);
+        arg->api_calls++;
+        if (ret != MC_ERROR_CODE_SUCCESS) {
+            arg->io_errors++;
+            continue;
+        }
+
+        ret = mc_read_int32(arg->fd, arg->d_addr, &read_d);
+        arg->api_calls++;
+        if (ret != MC_ERROR_CODE_SUCCESS) {
+            arg->io_errors++;
+            continue;
+        }
+
+        arg->checks++;
+        if (read_d != write_d) {
+            arg->mismatches++;
+        }
+
+        ret = mc_write_bool(arg->fd, arg->m_addr, write_m);
+        arg->api_calls++;
+        if (ret != MC_ERROR_CODE_SUCCESS) {
+            arg->io_errors++;
+            continue;
+        }
+
+        ret = mc_read_bool(arg->fd, arg->m_addr, &read_m);
+        arg->api_calls++;
+        if (ret != MC_ERROR_CODE_SUCCESS) {
+            arg->io_errors++;
+            continue;
+        }
+
+        arg->checks++;
+        if (read_m != write_m) {
+            arg->mismatches++;
+        }
+    }
+
+#ifdef _WIN32
+    return 0;
+#else
+    return NULL;
+#endif
+}
+
+static void run_sleep_ms(int ms)
+{
+#ifdef _WIN32
+    Sleep((DWORD)ms);
+#else
+    usleep((useconds_t)(ms * 1000));
+#endif
+}
+
+static double now_seconds(void)
+{
+#ifdef _WIN32
+    static LARGE_INTEGER freq;
+    static BOOL initialized = FALSE;
+    LARGE_INTEGER counter;
+
+    if (!initialized) {
+        QueryPerformanceFrequency(&freq);
+        initialized = TRUE;
+    }
+    QueryPerformanceCounter(&counter);
+    return (double)counter.QuadPart / (double)freq.QuadPart;
+#else
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (double)ts.tv_sec + (double)ts.tv_nsec / 1e9;
+#endif
+}
+
+static int create_threads_and_wait(stress_worker_arg_t* args, int thread_count)
+{
+    mc_thread_t* threads = (mc_thread_t*)malloc((size_t)thread_count * sizeof(mc_thread_t));
+    if (threads == NULL) {
+        return -1;
+    }
+
+    int started = 0;
+    for (int i = 0; i < thread_count; i++) {
+#ifdef _WIN32
+        threads[i] = CreateThread(NULL, 0, stress_worker_thread, &args[i], 0, NULL);
+        if (threads[i] == NULL) {
+            break;
+        }
+#else
+        if (pthread_create(&threads[i], NULL, stress_worker_thread, &args[i]) != 0) {
+            break;
+        }
+#endif
+        started++;
+    }
+
+    for (int i = 0; i < started; i++) {
+#ifdef _WIN32
+        WaitForSingleObject(threads[i], INFINITE);
+        CloseHandle(threads[i]);
+#else
+        pthread_join(threads[i], NULL);
+#endif
+    }
+
+    free(threads);
+    return (started == thread_count) ? 0 : -1;
+}
+
+static stress_summary_t summarize(const stress_worker_arg_t* args, int thread_count, double elapsed_sec)
+{
+    stress_summary_t s = { 0 };
+    for (int i = 0; i < thread_count; i++) {
+        s.api_calls += args[i].api_calls;
+        s.checks += args[i].checks;
+        s.mismatches += args[i].mismatches;
+        s.io_errors += args[i].io_errors;
+    }
+    s.elapsed_sec = elapsed_sec;
+    return s;
+}
+
+static void print_summary(const char* title, int thread_count, int iterations, const stress_summary_t* s)
+{
+    double mismatch_rate = (s->checks > 0) ? ((double)s->mismatches * 100.0 / (double)s->checks) : 0.0;
+    double qps = (s->elapsed_sec > 0.0) ? ((double)s->api_calls / s->elapsed_sec) : 0.0;
+    double check_rate = (s->elapsed_sec > 0.0) ? ((double)s->checks / s->elapsed_sec) : 0.0;
+
+    printf("\n==== %s ====\n", title);
+    printf("threads=%d, iterations/thread=%d\n", thread_count, iterations);
+    printf("elapsed=%.3f sec\n", s->elapsed_sec);
+    printf("api_calls=%ld, checks=%ld, io_errors=%ld\n", s->api_calls, s->checks, s->io_errors);
+    printf("mismatches=%ld, mismatch_rate=%.6f%%\n", s->mismatches, mismatch_rate);
+    printf("throughput_api=%.2f ops/s, throughput_checks=%.2f checks/s\n", qps, check_rate);
+}
+
+static int run_same_fd_stress(const char* ip, int port, int thread_count, int iterations)
+{
+    int fd = mc_connect((char*)ip, port, 0, 0);
+    if (fd <= 0) {
+        printf("[same-fd] connect failed: %s:%d\n", ip, port);
+        return -1;
+    }
+
+    stress_worker_arg_t* args = (stress_worker_arg_t*)calloc((size_t)thread_count, sizeof(stress_worker_arg_t));
+    if (args == NULL) {
+        mc_disconnect(fd);
+        return -1;
+    }
+
+    for (int i = 0; i < thread_count; i++) {
+        args[i].fd = fd;
+        args[i].thread_id = i;
+        args[i].iterations = iterations;
+        snprintf(args[i].d_addr, sizeof(args[i].d_addr), "D%d", 1000 + i * 2);
+        snprintf(args[i].m_addr, sizeof(args[i].m_addr), "M%d", 1000 + i);
+    }
+
+    double start = now_seconds();
+    int thread_ret = create_threads_and_wait(args, thread_count);
+    double elapsed = now_seconds() - start;
+
+    stress_summary_t s = summarize(args, thread_count, elapsed);
+    print_summary("Same-FD Mixed R/W", thread_count, iterations, &s);
+
+    free(args);
+    mc_disconnect(fd);
+
+    return thread_ret;
+}
+
+static int run_multi_fd_stress(const char* ip, int port, int thread_count, int iterations)
+{
+    int* fds = (int*)calloc((size_t)thread_count, sizeof(int));
+    stress_worker_arg_t* args = (stress_worker_arg_t*)calloc((size_t)thread_count, sizeof(stress_worker_arg_t));
+    if (fds == NULL || args == NULL) {
+        free(fds);
+        free(args);
+        return -1;
+    }
+
+    for (int i = 0; i < thread_count; i++) {
+        fds[i] = mc_connect((char*)ip, port, 0, 0);
+        if (fds[i] <= 0) {
+            printf("[multi-fd] connect failed at idx=%d: %s:%d\n", i, ip, port);
+            for (int j = 0; j < i; j++) {
+                if (fds[j] > 0) {
+                    mc_disconnect(fds[j]);
+                }
+            }
+            free(fds);
+            free(args);
+            return -1;
+        }
+
+        args[i].fd = fds[i];
+        args[i].thread_id = i;
+        args[i].iterations = iterations;
+        snprintf(args[i].d_addr, sizeof(args[i].d_addr), "D%d", 3000 + i * 2);
+        snprintf(args[i].m_addr, sizeof(args[i].m_addr), "M%d", 3000 + i);
+    }
+
+    double start = now_seconds();
+    int thread_ret = create_threads_and_wait(args, thread_count);
+    double elapsed = now_seconds() - start;
+
+    stress_summary_t s = summarize(args, thread_count, elapsed);
+    print_summary("Multi-FD Concurrent Throughput", thread_count, iterations, &s);
+
+    for (int i = 0; i < thread_count; i++) {
+        if (fds[i] > 0) {
+            mc_disconnect(fds[i]);
+        }
+    }
+
+    free(fds);
+    free(args);
+    return thread_ret;
+}
 
 int main(int argc, char** argv)
 {
-#include "network_init.h"
+    if (mc_network_init() != MC_ERROR_CODE_SUCCESS) {
+        printf("network init failed\n");
+        return -1;
+    }
 
-	if (mc_network_init() != MC_ERROR_CODE_SUCCESS)
-	{
-		return -1;
-	}
+    const char* plc_ip = "127.0.0.1";
+    int plc_port = 6001;
+    int same_fd_threads = 8;
+    int same_fd_iterations = 2000;
+    int multi_fd_threads = 8;
+    int multi_fd_iterations = 2000;
 
-#ifdef USE_SO
-	char szdllpath[1024];
-	strcpy(szdllpath, "../melsec_mc_net.so");
-	libso_fun(szdllpath);
-#endif
+    if (argc > 1) {
+        plc_ip = argv[1];
+    }
+    if (argc > 2) {
+        plc_port = atoi(argv[2]);
+    }
+    if (argc > 3) {
+        same_fd_threads = atoi(argv[3]);
+    }
+    if (argc > 4) {
+        same_fd_iterations = atoi(argv[4]);
+    }
+    if (argc > 5) {
+        multi_fd_threads = atoi(argv[5]);
+    }
+    if (argc > 6) {
+        multi_fd_iterations = atoi(argv[6]);
+    }
 
-	char* plc_ip = "127.0.0.1";
-	int plc_port = 6001;
-	if (argc > 1)
-	{
-		plc_ip = argv[1];
-		plc_port = atoi(argv[2]);
-	}
-	int fd = mc_connect(plc_ip, plc_port, 0, 0);
-	if (fd < 0)
-		goto label_end;
+    if (same_fd_threads < 1) same_fd_threads = 8;
+    if (same_fd_iterations < 1) same_fd_iterations = 2000;
+    if (multi_fd_threads < 1) multi_fd_threads = 8;
+    if (multi_fd_iterations < 1) multi_fd_iterations = 2000;
 
-	mc_error_code_e ret = MC_ERROR_CODE_FAILED;
+    printf("target=%s:%d\n", plc_ip, plc_port);
+    printf("same-fd: threads=%d, iterations=%d\n", same_fd_threads, same_fd_iterations);
+    printf("multi-fd: threads=%d, iterations=%d\n", multi_fd_threads, multi_fd_iterations);
 
-#if false
-	char* type = NULL;
-	ret = mc_read_plc_type(fd, &type);
-	printf("plc type: %s\n", type);
-	RELEASE_DATA(type);
-#endif
+    int same_fd_ret = run_same_fd_stress(plc_ip, plc_port, same_fd_threads, same_fd_iterations);
+    run_sleep_ms(300);
+    int multi_fd_ret = run_multi_fd_stress(plc_ip, plc_port, multi_fd_threads, multi_fd_iterations);
 
-	const int TEST_COUNT = 5000;
-	const int TEST_SLEEP_TIME = 2;	// seconds
-	int failed_count = 0;
+    mc_network_cleanup();
 
-	for (int i = 0; i < TEST_COUNT; i++)
-	{
-		printf("==============Test count: %d==============\n", i + 1);
-		bool all_success = false;
-		//////////////////////////////////////////////////////////////////////////
-		bool val = true;
-		ret = mc_write_bool(fd, "X1", val);
-		printf("Write\t X1 \tbool:\t %d, \tret: %d\n", val, ret);
-		GET_RESULT(ret);
+    if (same_fd_ret != 0 || multi_fd_ret != 0) {
+        return -1;
+    }
 
-		val = false;
-		ret = mc_read_bool(fd, "x1", &val);
-		printf("Read\t X1 \tbool:\t %d\n", val);
-		GET_RESULT(ret);
-
-		//////////////////////////////////////////////////////////////////////////
-		short w_s_val = 23;
-		ret = mc_write_short(fd, "D100", w_s_val);
-		printf("Write\t D100 \tshort:\t %d, \tret: %d\n", w_s_val, ret);
-		GET_RESULT(ret);
-
-		short s_val = 0;
-		ret = mc_read_short(fd, "D100", &s_val);
-		printf("Read\t D100 \tshort:\t %d\n", s_val);
-		GET_RESULT(ret);
-
-		//////////////////////////////////////////////////////////////////////////
-		ushort w_us_val = 255;
-		ret = mc_write_ushort(fd, "D100", w_us_val);
-		printf("Write\t D100 \tushort:\t %d, \tret: %d\n", w_us_val, ret);
-		GET_RESULT(ret);
-
-		ushort us_val = 0;
-		ret = mc_read_ushort(fd, "D100", &us_val);
-		printf("Read\t D100 \tushort:\t %d\n", us_val);
-		GET_RESULT(ret);
-
-		//////////////////////////////////////////////////////////////////////////
-		int32 w_i_val = 12345;
-		ret = mc_write_int32(fd, "D100", w_i_val);
-		printf("Write\t D100 \tint32:\t %d, \tret: %d\n", w_i_val, ret);
-		GET_RESULT(ret);
-
-		int i_val = 0;
-		ret = mc_read_int32(fd, "D100", &i_val);
-		printf("Read\t D100 \tint32:\t %d\n", i_val);
-		GET_RESULT(ret);
-
-		//////////////////////////////////////////////////////////////////////////
-		uint32 w_ui_val = 22345;
-		ret = mc_write_uint32(fd, "D100", w_ui_val);
-		printf("Write\t D100 \tuint32:\t %d, \tret: %d\n", w_ui_val, ret);
-		GET_RESULT(ret);
-
-		uint32 ui_val = 0;
-		ret = mc_read_uint32(fd, "D100", &ui_val);
-		printf("Read\t D100 \tuint32:\t %d\n", ui_val);
-		GET_RESULT(ret);
-
-		//////////////////////////////////////////////////////////////////////////
-		int64 w_i64_val = 333334554;
-		ret = mc_write_int64(fd, "D100", w_i64_val);
-		printf("Write\t D100 \tuint64:\t %lld, \tret: %d\n", w_i64_val, ret);
-		GET_RESULT(ret);
-
-		int64 i64_val = 0;
-		ret = mc_read_int64(fd, "D100", &i64_val);
-		printf("Read\t D100 \tint64:\t %lld\n", i64_val);
-		GET_RESULT(ret);
-
-		//////////////////////////////////////////////////////////////////////////
-		uint64 w_ui64_val = 4333334554;
-		ret = mc_write_uint64(fd, "D100", w_ui64_val);
-		printf("Write\t D100 \tuint64:\t %lld, \tret: %d\n", w_ui64_val, ret);
-		GET_RESULT(ret);
-
-		int64 ui64_val = 0;
-		ret = mc_read_uint64(fd, "D100", &ui64_val);
-		printf("Read\t D100 \tuint64:\t %lld\n", ui64_val);
-		GET_RESULT(ret);
-
-		//////////////////////////////////////////////////////////////////////////
-		float w_f_val = 32.454f;
-		ret = mc_write_float(fd, "D100", w_f_val);
-		printf("Write\t D100 \tfloat:\t %f, \tret: %d\n", w_f_val, ret);
-		GET_RESULT(ret);
-
-		float f_val = 0;
-		ret = mc_read_float(fd, "D100", &f_val);
-		printf("Read\t D100 \tfloat:\t %f\n", f_val);
-		GET_RESULT(ret);
-
-		//////////////////////////////////////////////////////////////////////////
-		double w_d_val = 12345.6789;
-		ret = mc_write_double(fd, "D100", w_d_val);
-		printf("Write\t D100 \tdouble:\t %lf, \tret: %d\n", w_d_val, ret);
-		GET_RESULT(ret);
-
-		double d_val = 0;
-		ret = mc_read_double(fd, "D100", &d_val);
-		printf("Read\t D100 \tdouble:\t %lf\n", d_val);
-		GET_RESULT(ret);
-
-		//////////////////////////////////////////////////////////////////////////
-		const char sz_write[] = "wqliceman@gmail.com";
-		int length = sizeof(sz_write) / sizeof(sz_write[0]);
-		ret = mc_write_string(fd, "D100", length, sz_write);
-		printf("Write\t D100 \tstring:\t %s, \tret: %d\n", sz_write, ret);
-		GET_RESULT(ret);
-
-		char* str_val = NULL;
-		ret = mc_read_string(fd, "D100", length, &str_val);
-		printf("Read\t D100 \tstring:\t %s\n", str_val);
-		RELEASE_DATA(str_val);
-		GET_RESULT(ret);
-
-#ifdef _WIN32
-		Sleep(TEST_SLEEP_TIME * 1000);
-#else
-		sleep(TEST_SLEEP_TIME);
-#endif
-	}
-
-	printf("All Failed count: %d\n", failed_count);
-
-	// mc_remote_run(fd);
-	// mc_remote_stop(fd);
-	// mc_remote_reset(fd);
-	mc_disconnect(fd);
-
-label_end:
-	mc_network_cleanup();
-#ifdef _WIN32
-#else
-	;
-#endif
+    return 0;
 }
