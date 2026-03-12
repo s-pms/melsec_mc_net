@@ -6,6 +6,8 @@
 #include "error_handler.h"
 #include "thread_safe.h"
 
+#include <string.h>
+
 #ifdef _WIN32
 #include <winsock2.h>
 #pragma comment(lib, "ws2_32.lib") /* Linking with winsock library */
@@ -14,6 +16,7 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <unistd.h>
 #endif
 
 plc_network_address g_network_address;
