@@ -18,6 +18,128 @@
 
 plc_network_address g_network_address;
 
+#define MAX_TX_CONNECTIONS 64
+typedef struct {
+	int fd;
+	bool in_use;
+	mc_mutex_t tx_mutex;
+	bool tx_mutex_initialized;
+} mc_tx_connection_lock_t;
+
+static mc_tx_connection_lock_t g_tx_connection_locks[MAX_TX_CONNECTIONS] = { 0 };
+
+static mc_mutex_t* mc_get_or_create_fd_tx_mutex_locked(int fd)
+{
+	for (int i = 0; i < MAX_TX_CONNECTIONS; i++) {
+		if (g_tx_connection_locks[i].in_use && g_tx_connection_locks[i].fd == fd) {
+			return &g_tx_connection_locks[i].tx_mutex;
+		}
+	}
+
+	for (int i = 0; i < MAX_TX_CONNECTIONS; i++) {
+		if (!g_tx_connection_locks[i].in_use) {
+			g_tx_connection_locks[i].fd = fd;
+			g_tx_connection_locks[i].in_use = true;
+			if (!g_tx_connection_locks[i].tx_mutex_initialized) {
+				if (mc_mutex_init(&g_tx_connection_locks[i].tx_mutex) != MC_ERROR_CODE_SUCCESS) {
+					g_tx_connection_locks[i].in_use = false;
+					return NULL;
+				}
+				g_tx_connection_locks[i].tx_mutex_initialized = true;
+			}
+
+			return &g_tx_connection_locks[i].tx_mutex;
+		}
+	}
+
+	return NULL;
+}
+
+static mc_error_code_e mc_lock_fd_transaction(int fd)
+{
+	if (fd <= 0) {
+		return MC_ERROR_CODE_INVALID_PARAMETER;
+	}
+
+	mc_mutex_t* tx_mutex = NULL;
+	mc_mutex_lock(&g_connection_mutex);
+	tx_mutex = mc_get_or_create_fd_tx_mutex_locked(fd);
+	mc_mutex_unlock(&g_connection_mutex);
+	if (tx_mutex == NULL) {
+		return MC_ERROR_CODE_FAILED;
+	}
+
+	return mc_mutex_lock(tx_mutex);
+}
+
+static mc_error_code_e mc_unlock_fd_transaction(int fd)
+{
+	if (fd <= 0) {
+		return MC_ERROR_CODE_INVALID_PARAMETER;
+	}
+
+	mc_mutex_t* tx_mutex = NULL;
+	mc_mutex_lock(&g_connection_mutex);
+	for (int i = 0; i < MAX_TX_CONNECTIONS; i++) {
+		if (g_tx_connection_locks[i].in_use && g_tx_connection_locks[i].fd == fd) {
+			tx_mutex = &g_tx_connection_locks[i].tx_mutex;
+			break;
+		}
+	}
+	mc_mutex_unlock(&g_connection_mutex);
+
+	if (tx_mutex == NULL) {
+		return MC_ERROR_CODE_FAILED;
+	}
+
+	return mc_mutex_unlock(tx_mutex);
+}
+
+static mc_error_code_e mc_send_and_receive_transaction(int fd, byte_array_info* cmd, byte_array_info* response, int* recv_size)
+{
+	if (fd <= 0 || cmd == NULL || cmd->data == NULL || cmd->length <= 0 || response == NULL || recv_size == NULL) {
+		return MC_ERROR_CODE_INVALID_PARAMETER;
+	}
+
+	mc_error_code_e ret = mc_lock_fd_transaction(fd);
+	if (ret != MC_ERROR_CODE_SUCCESS) {
+		return ret;
+	}
+
+	mc_comm_config_t config;
+	mc_get_comm_config(fd, &config);
+
+	bool send_ret = false;
+	for (int i = 0; i <= config.retry_count; i++) {
+		send_ret = mc_try_send_msg(fd, cmd);
+		if (send_ret) {
+			break;
+		}
+
+		if (i < config.retry_count) {
+#ifdef _WIN32
+			Sleep(config.retry_interval_ms);
+#else
+			usleep(config.retry_interval_ms * 1000);
+#endif
+		}
+	}
+
+	if (!send_ret) {
+		ret = MC_ERROR_CODE_SOCKET_SEND_FAILED;
+	}
+	else {
+		ret = mc_read_response(fd, response, recv_size);
+	}
+
+	mc_error_code_e unlock_ret = mc_unlock_fd_transaction(fd);
+	if (ret == MC_ERROR_CODE_SUCCESS && unlock_ret != MC_ERROR_CODE_SUCCESS) {
+		ret = unlock_ret;
+	}
+
+	return ret;
+}
+
 static mc_error_code_e mc_recv_exact(int fd, byte* buffer, int bytes_to_read)
 {
 	int total_read = 0;
@@ -155,39 +277,13 @@ mc_error_code_e read_bool_value(int fd, const char* address, int length, byte_ar
 		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
 	}
 
-	// Get communication configuration
-	mc_comm_config_t config;
-	mc_get_comm_config(fd, &config);
-
-	// Send message with retry mechanism
-	bool send_ret = false;
-	for (int i = 0; i <= config.retry_count; i++) {
-		send_ret = mc_try_send_msg(fd, &cmd);
-		if (send_ret) break;
-
-		if (i < config.retry_count) {
-			// Wait for retry interval
-#ifdef _WIN32
-			Sleep(config.retry_interval_ms);
-#else
-			usleep(config.retry_interval_ms * 1000);
-#endif
-		}
-	}
-
-	RELEASE_DATA(cmd.data);
-	if (!send_ret) {
-		mc_log_error(MC_ERROR_CODE_SOCKET_SEND_FAILED, "Send message failed: Network error or connection disconnected");
-		return MC_ERROR_CODE_SOCKET_SEND_FAILED;
-	}
-
-	// Receive response
 	byte_array_info response = { 0 };
 	int recv_size = 0;
-	ret = mc_read_response(fd, &response, &recv_size);
+	ret = mc_send_and_receive_transaction(fd, &cmd, &response, &recv_size);
+	RELEASE_DATA(cmd.data);
 	if (ret != MC_ERROR_CODE_SUCCESS) {
 		RELEASE_DATA(response.data);
-		mc_log_error(ret, "Read response failed");
+		mc_log_error(ret, "Send/receive transaction failed");
 		return ret;
 	}
 
@@ -268,39 +364,13 @@ mc_error_code_e read_address_data(int fd, melsec_mc_address_data address_data, b
 		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
 	}
 
-	// Get communication configuration
-	mc_comm_config_t config;
-	mc_get_comm_config(fd, &config);
-
-	// Send message with retry mechanism
-	bool send_ret = false;
-	for (int i = 0; i <= config.retry_count; i++) {
-		send_ret = mc_try_send_msg(fd, &cmd);
-		if (send_ret) break;
-
-		if (i < config.retry_count) {
-			// Wait for retry interval
-#ifdef _WIN32
-			Sleep(config.retry_interval_ms);
-#else
-			usleep(config.retry_interval_ms * 1000);
-#endif
-		}
-	}
-
-	RELEASE_DATA(cmd.data);
-	if (!send_ret) {
-		mc_log_error(MC_ERROR_CODE_SOCKET_SEND_FAILED, "Send message failed: Network error or connection disconnected");
-		return MC_ERROR_CODE_SOCKET_SEND_FAILED;
-	}
-
-	// Receive response
 	byte_array_info response = { 0 };
 	int recv_size = 0;
-	ret = mc_read_response(fd, &response, &recv_size);
+	ret = mc_send_and_receive_transaction(fd, &cmd, &response, &recv_size);
+	RELEASE_DATA(cmd.data);
 	if (ret != MC_ERROR_CODE_SUCCESS) {
 		RELEASE_DATA(response.data);
-		mc_log_error(ret, "Read response failed");
+		mc_log_error(ret, "Send/receive transaction failed");
 		return ret;
 	}
 
@@ -364,39 +434,13 @@ mc_error_code_e write_bool_value(int fd, const char* address, int length, bool_a
 		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
 	}
 
-	// Get communication configuration
-	mc_comm_config_t config;
-	mc_get_comm_config(fd, &config);
-
-	// Send message with retry mechanism
-	bool send_ret = false;
-	for (int i = 0; i <= config.retry_count; i++) {
-		send_ret = mc_try_send_msg(fd, &cmd);
-		if (send_ret) break;
-
-		if (i < config.retry_count) {
-			// Wait for retry interval
-#ifdef _WIN32
-			Sleep(config.retry_interval_ms);
-#else
-			usleep(config.retry_interval_ms * 1000);
-#endif
-		}
-	}
-
-	RELEASE_DATA(cmd.data);
-	if (!send_ret) {
-		mc_log_error(MC_ERROR_CODE_SOCKET_SEND_FAILED, "Send message failed: Network error or connection disconnected");
-		return MC_ERROR_CODE_SOCKET_SEND_FAILED;
-	}
-
-	// Receive response
 	byte_array_info response = { 0 };
 	int recv_size = 0;
-	ret = mc_read_response(fd, &response, &recv_size);
+	ret = mc_send_and_receive_transaction(fd, &cmd, &response, &recv_size);
+	RELEASE_DATA(cmd.data);
 	if (ret != MC_ERROR_CODE_SUCCESS) {
 		RELEASE_DATA(response.data);
-		mc_log_error(ret, "Read response failed");
+		mc_log_error(ret, "Send/receive transaction failed");
 		return ret;
 	}
 
@@ -448,20 +492,13 @@ mc_error_code_e write_address_data(int fd, melsec_mc_address_data address_data, 
 	if (cmd.data == NULL)
 		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
 
-	bool send_ret = mc_try_send_msg(fd, &cmd);
-	RELEASE_DATA(cmd.data);
-	if (!send_ret) {
-		mc_log_error(MC_ERROR_CODE_SOCKET_SEND_FAILED, "Send message failed: Network error or connection disconnected");
-		return MC_ERROR_CODE_SOCKET_SEND_FAILED;
-	}
-
-	// Receive response
 	byte_array_info response = { 0 };
 	int recv_size = 0;
-	ret = mc_read_response(fd, &response, &recv_size);
+	ret = mc_send_and_receive_transaction(fd, &cmd, &response, &recv_size);
+	RELEASE_DATA(cmd.data);
 	if (ret != MC_ERROR_CODE_SUCCESS) {
 		RELEASE_DATA(response.data);
-		mc_log_error(ret, "Read response failed");
+		mc_log_error(ret, "Send/receive transaction failed");
 		return ret;
 	}
 
@@ -525,39 +562,13 @@ mc_error_code_e mc_remote_run(int fd)
 		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
 	}
 
-	// Get communication configuration
-	mc_comm_config_t config;
-	mc_get_comm_config(fd, &config);
-
-	// Send message with retry mechanism
-	bool send_ret = false;
-	for (int i = 0; i <= config.retry_count; i++) {
-		send_ret = mc_try_send_msg(fd, &cmd);
-		if (send_ret) break;
-
-		if (i < config.retry_count) {
-			// Wait for retry interval
-#ifdef _WIN32
-			Sleep(config.retry_interval_ms);
-#else
-			usleep(config.retry_interval_ms * 1000);
-#endif
-		}
-	}
-
-	RELEASE_DATA(cmd.data);
-	if (!send_ret) {
-		mc_log_error(MC_ERROR_CODE_SOCKET_SEND_FAILED, "Remote PLC run failed: Command sending failed");
-		return MC_ERROR_CODE_SOCKET_SEND_FAILED;
-	}
-
-	// Receive response
 	byte_array_info response = { 0 };
 	int recv_size = 0;
-	ret = mc_read_response(fd, &response, &recv_size);
+	ret = mc_send_and_receive_transaction(fd, &cmd, &response, &recv_size);
+	RELEASE_DATA(cmd.data);
 	if (ret != MC_ERROR_CODE_SUCCESS) {
 		RELEASE_DATA(response.data);
-		mc_log_error(ret, "Remote run PLC failed: Read response failed");
+		mc_log_error(ret, "Remote run PLC failed: Send/receive transaction failed");
 		return ret;
 	}
 
@@ -594,20 +605,13 @@ mc_error_code_e mc_remote_stop(int fd)
 	if (cmd.data == NULL)
 		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
 
-	bool send_ret = mc_try_send_msg(fd, &cmd);
-	RELEASE_DATA(cmd.data);
-	if (!send_ret) {
-		mc_log_error(MC_ERROR_CODE_SOCKET_SEND_FAILED, "Send message failed: Network error or connection disconnected");
-		return MC_ERROR_CODE_SOCKET_SEND_FAILED;
-	}
-
-	// Receive response
 	byte_array_info response = { 0 };
 	int recv_size = 0;
-	ret = mc_read_response(fd, &response, &recv_size);
+	ret = mc_send_and_receive_transaction(fd, &cmd, &response, &recv_size);
+	RELEASE_DATA(cmd.data);
 	if (ret != MC_ERROR_CODE_SUCCESS) {
 		RELEASE_DATA(response.data);
-		mc_log_error(ret, "Read response failed");
+		mc_log_error(ret, "Send/receive transaction failed");
 		return ret;
 	}
 
@@ -671,39 +675,13 @@ mc_error_code_e mc_remote_reset(int fd)
 		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
 	}
 
-	// Get communication configuration
-	mc_comm_config_t config;
-	mc_get_comm_config(fd, &config);
-
-	// Send message with retry mechanism
-	bool send_ret = false;
-	for (int i = 0; i <= config.retry_count; i++) {
-		send_ret = mc_try_send_msg(fd, &cmd);
-		if (send_ret) break;
-
-		if (i < config.retry_count) {
-			// Wait for retry interval
-#ifdef _WIN32
-			Sleep(config.retry_interval_ms);
-#else
-			usleep(config.retry_interval_ms * 1000);
-#endif
-		}
-	}
-
-	RELEASE_DATA(cmd.data);
-	if (!send_ret) {
-		mc_log_error(MC_ERROR_CODE_SOCKET_SEND_FAILED, "Remote PLC reset failed: Command sending failed");
-		return MC_ERROR_CODE_SOCKET_SEND_FAILED;
-	}
-
-	// Receive response
 	byte_array_info response = { 0 };
 	int recv_size = 0;
-	ret = mc_read_response(fd, &response, &recv_size);
+	ret = mc_send_and_receive_transaction(fd, &cmd, &response, &recv_size);
+	RELEASE_DATA(cmd.data);
 	if (ret != MC_ERROR_CODE_SUCCESS) {
 		RELEASE_DATA(response.data);
-		mc_log_error(ret, "Remote reset PLC failed: Read response failed");
+		mc_log_error(ret, "Remote reset PLC failed: Send/receive transaction failed");
 		return ret;
 	}
 
@@ -769,38 +747,13 @@ mc_error_code_e mc_read_plc_type(int fd, char** type)
 		return MC_ERROR_CODE_BUILD_CORE_CMD_FAILED;
 	}
 
-	// Get communication configuration
-	mc_comm_config_t config;
-	mc_get_comm_config(fd, &config);
-
-	// Send message with retry mechanism
-	bool send_ret = false;
-	for (int i = 0; i <= config.retry_count; i++) {
-		send_ret = mc_try_send_msg(fd, &cmd);
-		if (send_ret) break;
-
-		if (i < config.retry_count) {
-			// Wait for retry interval
-#ifdef _WIN32
-			Sleep(config.retry_interval_ms);
-#else
-			usleep(config.retry_interval_ms * 1000);
-#endif
-		}
-	}
-
-	RELEASE_DATA(cmd.data);
-	if (!send_ret) {
-		mc_log_error(MC_ERROR_CODE_SOCKET_SEND_FAILED, "Read PLC type failed: Send command failed");
-		return MC_ERROR_CODE_SOCKET_SEND_FAILED;
-	}
-
 	byte_array_info response = { 0 };
 	int recv_size = 0;
-	ret = mc_read_response(fd, &response, &recv_size);
+	ret = mc_send_and_receive_transaction(fd, &cmd, &response, &recv_size);
+	RELEASE_DATA(cmd.data);
 	if (ret != MC_ERROR_CODE_SUCCESS) {
 		RELEASE_DATA(response.data);
-		mc_log_error(ret, "Read PLC type failed: Read response failed");
+		mc_log_error(ret, "Read PLC type failed: Send/receive transaction failed");
 		return ret;
 	}
 
