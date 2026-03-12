@@ -2,60 +2,60 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-A C library for Mitsubishi PLC communication over Ethernet using MC Protocol (QnA-compatible 3E frame, binary mode).
+一个基于 C 语言的三菱 PLC 以太网通信库，采用 MC 协议（QnA 兼容 3E 帧，二进制模式）。
 
-## Overview
+## 项目概览
 
-- Language: C
-- Platforms: Windows and Linux
-- Protocol: MC Protocol 3E frame (binary)
-- Typical tested hardware: QJ71E71 network module, FX5U
+- 语言：C
+- 平台：Windows / Linux
+- 协议：MC Protocol 3E Frame（Binary）
+- 常见测试设备：QJ71E71 网络模块、FX5U
 
-The library exposes typed read/write APIs, PLC remote control APIs, and batch APIs. It also includes communication timeout/retry configuration and thread-safety improvements for request/response transaction serialization on the same socket.
+当前代码已提供类型化读写接口、批量读写接口、PLC 远程控制接口，以及通信超时/重试配置能力。并且已增强同一连接上的事务级串行化，避免多线程并发导致响应串包。
 
-## Key Features
+## 核心能力
 
-- PLC connect/disconnect
-- Typed single-value read/write
-- Batch read/write for common scalar types
-- Remote run/stop/reset and PLC type query
-- Configurable send/receive timeout and retry strategy
-- Request-response transaction serialization per file descriptor
+- PLC 连接与断开
+- 多类型单值读写
+- 常用类型批量读写
+- 远程运行/停止/复位与 PLC 型号读取
+- 发送/接收超时与重试参数配置
+- 同一 fd 的请求-响应事务串行化
 
-## Project Layout
+## 目录结构
 
-- `melsec_mc_net/`: core library source and headers
-- `docs/`: protocol/API notes
-- `app/`: build artifacts/dependency files for the Make-based flow
-- `main.c` in `melsec_mc_net/`: example and test entry
+- `melsec_mc_net/`：核心源码与头文件
+- `docs/`：协议/API 说明
+- `app/`：Make 流程相关中间产物目录
+- `melsec_mc_net/main.c`：示例与测试入口
 
-## Build
+## 构建方式
 
-### Linux / WSL (Make)
+### Linux / WSL（Make）
 
-From repository root:
+在仓库根目录执行：
 
 ```bash
 make clean
 make
 ```
 
-The default Make flow produces `mc_bin_test` at repository root.
+默认会在仓库根目录生成 `mc_bin_test`。
 
-### Windows (Visual Studio)
+### Windows（Visual Studio）
 
-Open `melsec_mc_net/melsec_mc_net.sln` in Visual Studio and build the target project.
+使用 Visual Studio 打开 `melsec_mc_net/melsec_mc_net.sln` 并编译对应工程。
 
-## Basic Usage
+## 基础使用
 
-Include headers:
+头文件：
 
 ```c
 #include "melsec_mc_bin.h"
 #include "typedef.h"
 ```
 
-Initialize network stack (recommended cross-platform entry):
+推荐先初始化网络环境：
 
 ```c
 #include "network_init.h"
@@ -65,7 +65,7 @@ if (mc_network_init() != MC_ERROR_CODE_SUCCESS) {
 }
 ```
 
-Connect and disconnect:
+连接与断开：
 
 ```c
 int fd = mc_connect("192.168.1.10", 6001, 0, 0);
@@ -77,7 +77,7 @@ mc_disconnect(fd);
 mc_network_cleanup();
 ```
 
-Read and write examples:
+读写示例：
 
 ```c
 short s = 0;
@@ -87,21 +87,21 @@ mc_write_int32(fd, "D200", 12345);
 
 char* plc_type = NULL;
 if (mc_read_plc_type(fd, &plc_type) == MC_ERROR_CODE_SUCCESS) {
-    /* use plc_type */
+    /* 使用 plc_type */
     free(plc_type);
 }
 ```
 
-## Public APIs
+## 公开 API
 
-### Connection
+### 连接接口
 
 ```c
 int mc_connect(char* ip_addr, int port, byte network_addr, byte station_addr);
 bool mc_disconnect(int fd);
 ```
 
-### Single-value Read
+### 单值读取
 
 ```c
 mc_error_code_e mc_read_bool(int fd, const char* address, bool* val);
@@ -116,7 +116,7 @@ mc_error_code_e mc_read_double(int fd, const char* address, double* val);
 mc_error_code_e mc_read_string(int fd, const char* address, int length, char** val);
 ```
 
-### Single-value Write
+### 单值写入
 
 ```c
 mc_error_code_e mc_write_bool(int fd, const char* address, bool val);
@@ -131,9 +131,9 @@ mc_error_code_e mc_write_double(int fd, const char* address, double val);
 mc_error_code_e mc_write_string(int fd, const char* address, int length, const char* val);
 ```
 
-### Batch APIs
+### 批量接口
 
-Header: `melsec_mc_bin_batch.h`
+头文件：`melsec_mc_bin_batch.h`
 
 ```c
 mc_error_code_e mc_read_bool_batch(int fd, const char* address, int length, bool* values);
@@ -151,7 +151,7 @@ mc_error_code_e mc_write_uint32_batch(int fd, const char* address, int length, c
 mc_error_code_e mc_write_float_batch(int fd, const char* address, int length, const float* values);
 ```
 
-### PLC Control / Information
+### PLC 控制与信息
 
 ```c
 mc_error_code_e mc_remote_run(int fd);
@@ -160,9 +160,9 @@ mc_error_code_e mc_remote_reset(int fd);
 mc_error_code_e mc_read_plc_type(int fd, char** type);
 ```
 
-### Communication Configuration
+### 通信参数配置
 
-Header: `socket.h`
+头文件：`socket.h`
 
 ```c
 typedef struct {
@@ -176,9 +176,9 @@ mc_error_code_e mc_set_comm_config(int fd, mc_comm_config_t config);
 mc_error_code_e mc_get_comm_config(int fd, mc_comm_config_t* config);
 ```
 
-## Address Format
+## 地址格式
 
-The API accepts address strings such as:
+支持如下一类地址字符串：
 
 - `M100`
 - `X1`
@@ -187,48 +187,50 @@ The API accepts address strings such as:
 - `ZR200`
 - `TN10`
 
-Supported device addresses include M/X/Y/D/W/L/F/V/B/R/SN/SS/SC/ZR/Z/TC/TS/TN/CN/CS/CC.
+支持的设备地址包含：M/X/Y/D/W/L/F/V/B/R/SN/SS/SC/ZR/Z/TC/TS/TN/CN/CS/CC。
 
-For easier migration and one-to-one mapping, the full address list is kept below:
+为便于对照与迁移，保留完整地址列表如下：
 
-1. Internal relay: M
-2. Input relay: X
-3. Output relay: Y
-4. Data register: D
-5. Link register: W
-6. Latch relay: L
-7. Annunciator: F
-8. Edge relay: V
-9. Link relay: B
-10. File register: R
-11. Accumulative timer current value: SN
-12. Accumulative timer contact: SS
-13. Accumulative timer coil: SC
-14. File register ZR area: ZR
-15. Index register: Z
-16. Timer coil: TC
-17. Timer contact: TS
-18. Timer current value: TN
-19. Counter current value: CN
-20. Counter contact: CS
-21. Counter coil: CC
+| 序号 | 描述               | 地址类型 |
+| :--: | :----------------- | :------: |
+|  1   | 中间继电器         |    M     |
+|  2   | 输入继电器         |    X     |
+|  3   | 输出继电器         |    Y     |
+|  4   | 数据寄存器         |    D     |
+|  5   | 链接寄存器         |    W     |
+|  6   | 锁存继电器         |    L     |
+|  7   | 报警器             |    F     |
+|  8   | 边沿继电器         |    V     |
+|  9   | 链接继电器         |    B     |
+|  10  | 文件寄存器         |    R     |
+|  11  | 累计定时器的当前值 |    SN    |
+|  12  | 累计定时器的触点   |    SS    |
+|  13  | 累计定时器的线圈   |    SC    |
+|  14  | 文件寄存器 ZR 区   |    ZR    |
+|  15  | 变址寄存器         |    Z     |
+|  16  | 定时器的线圈       |    TC    |
+|  17  | 定时器的触点       |    TS    |
+|  18  | 定时器的当前值     |    TN    |
+|  19  | 计数器的当前值     |    CN    |
+|  20  | 计数器的触点       |    CS    |
+|  21  | 计数器的线圈       |    CC    |
 
-## Thread-Safety Notes
+## 线程安全说明
 
-- Requests on the same file descriptor are serialized at transaction level (send + receive) to prevent response interleaving across threads.
-- You can still run parallel workloads across different connections.
+- 同一 fd 上的请求按事务级串行化（发送 + 接收在同一锁中完成），可避免多线程响应交叉。
+- 不同连接间可并发执行。
 
-## Limitations
+## 使用限制
 
-- This repository currently focuses on binary MC communication path.
-- Please configure the PLC Ethernet module and MC communication parameters before use.
+- 当前仓库重点维护二进制 MC 通信路径。
+- 使用前需在 PLC 侧正确配置以太网模块与 MC 协议参数。
 
-## Troubleshooting
+## 常见问题
 
-- Connection fails: verify IP, port, PLC network/station number, firewall, and PLC Ethernet module settings.
-- Timeout or intermittent errors: tune `send_timeout_ms`, `recv_timeout_ms`, and retry parameters.
-- Incorrect data: verify device address type and base (decimal/hex by device family).
+- 无法连接：检查 IP、端口、network/station、PLC 侧参数和防火墙。
+- 超时/偶发失败：根据网络质量调整 timeout 和 retry 参数。
+- 数据异常：检查软元件地址类型与地址进制是否匹配。
 
-## License
+## 许可证
 
-See `LICENSE`.
+见 `LICENSE`。
