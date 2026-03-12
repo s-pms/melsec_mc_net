@@ -16,9 +16,6 @@ mc_error_code_e mc_read_bool_batch(int fd, const char* address, int length, bool
 		return MC_ERROR_CODE_INVALID_PARAMETER;
 	}
 
-	// Lock protection
-	mc_mutex_lock(&g_connection_mutex);
-
 	mc_error_code_e ret = MC_ERROR_CODE_FAILED;
 	byte_array_info read_data = { 0 };
 
@@ -36,8 +33,6 @@ mc_error_code_e mc_read_bool_batch(int fd, const char* address, int length, bool
 		mc_log_error(ret, "Batch read boolean values failed");
 	}
 
-	// Unlock
-	mc_mutex_unlock(&g_connection_mutex);
 	return ret;
 }
 
@@ -47,9 +42,6 @@ mc_error_code_e mc_read_short_batch(int fd, const char* address, int length, sho
 		mc_log_error(MC_ERROR_CODE_INVALID_PARAMETER, "Batch read short integers parameter error");
 		return MC_ERROR_CODE_INVALID_PARAMETER;
 	}
-
-	// Lock protection
-	mc_mutex_lock(&g_connection_mutex);
 
 	mc_error_code_e ret = MC_ERROR_CODE_FAILED;
 	byte_array_info read_data = { 0 };
@@ -68,8 +60,6 @@ mc_error_code_e mc_read_short_batch(int fd, const char* address, int length, sho
 		mc_log_error(ret, "Batch read short integers failed");
 	}
 
-	// Unlock
-	mc_mutex_unlock(&g_connection_mutex);
 	return ret;
 }
 
@@ -79,9 +69,6 @@ mc_error_code_e mc_read_ushort_batch(int fd, const char* address, int length, us
 		mc_log_error(MC_ERROR_CODE_INVALID_PARAMETER, "Batch read unsigned short integers parameter error");
 		return MC_ERROR_CODE_INVALID_PARAMETER;
 	}
-
-	// Lock protection
-	mc_mutex_lock(&g_connection_mutex);
 
 	mc_error_code_e ret = MC_ERROR_CODE_FAILED;
 	byte_array_info read_data = { 0 };
@@ -100,8 +87,6 @@ mc_error_code_e mc_read_ushort_batch(int fd, const char* address, int length, us
 		mc_log_error(ret, "Batch read unsigned short integers failed");
 	}
 
-	// Unlock
-	mc_mutex_unlock(&g_connection_mutex);
 	return ret;
 }
 
@@ -111,9 +96,6 @@ mc_error_code_e mc_read_int32_batch(int fd, const char* address, int length, int
 		mc_log_error(MC_ERROR_CODE_INVALID_PARAMETER, "Batch read 32-bit integers parameter error");
 		return MC_ERROR_CODE_INVALID_PARAMETER;
 	}
-
-	// Lock protection
-	mc_mutex_lock(&g_connection_mutex);
 
 	mc_error_code_e ret = MC_ERROR_CODE_FAILED;
 	byte_array_info read_data = { 0 };
@@ -132,8 +114,6 @@ mc_error_code_e mc_read_int32_batch(int fd, const char* address, int length, int
 		mc_log_error(ret, "Batch read 32-bit integers failed");
 	}
 
-	// Unlock
-	mc_mutex_unlock(&g_connection_mutex);
 	return ret;
 }
 
@@ -143,9 +123,6 @@ mc_error_code_e mc_read_uint32_batch(int fd, const char* address, int length, ui
 		mc_log_error(MC_ERROR_CODE_INVALID_PARAMETER, "Batch read unsigned 32-bit integers parameter error");
 		return MC_ERROR_CODE_INVALID_PARAMETER;
 	}
-
-	// Lock protection
-	mc_mutex_lock(&g_connection_mutex);
 
 	mc_error_code_e ret = MC_ERROR_CODE_FAILED;
 	byte_array_info read_data = { 0 };
@@ -164,8 +141,6 @@ mc_error_code_e mc_read_uint32_batch(int fd, const char* address, int length, ui
 		mc_log_error(ret, "Batch read unsigned 32-bit integers failed");
 	}
 
-	// Unlock
-	mc_mutex_unlock(&g_connection_mutex);
 	return ret;
 }
 
@@ -175,9 +150,6 @@ mc_error_code_e mc_read_float_batch(int fd, const char* address, int length, flo
 		mc_log_error(MC_ERROR_CODE_INVALID_PARAMETER, "Batch read floating point numbers parameter error");
 		return MC_ERROR_CODE_INVALID_PARAMETER;
 	}
-
-	// Lock protection
-	mc_mutex_lock(&g_connection_mutex);
 
 	mc_error_code_e ret = MC_ERROR_CODE_FAILED;
 	byte_array_info read_data = { 0 };
@@ -196,8 +168,6 @@ mc_error_code_e mc_read_float_batch(int fd, const char* address, int length, flo
 		mc_log_error(ret, "Batch read floating point numbers failed");
 	}
 
-	// Unlock
-	mc_mutex_unlock(&g_connection_mutex);
 	return ret;
 }
 
@@ -208,15 +178,11 @@ mc_error_code_e mc_write_bool_batch(int fd, const char* address, int length, con
 		return MC_ERROR_CODE_INVALID_PARAMETER;
 	}
 
-	// Lock protection
-	mc_mutex_lock(&g_connection_mutex);
-
 	// Create boolean array
 	bool_array_info bool_array;
 	bool_array.data = (bool*)malloc(length);
 	if (bool_array.data == NULL) {
 		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "Batch write boolean values memory allocation failed");
-		mc_mutex_unlock(&g_connection_mutex);
 		return MC_ERROR_CODE_MALLOC_FAILED;
 	}
 	bool_array.length = length;
@@ -230,11 +196,6 @@ mc_error_code_e mc_write_bool_batch(int fd, const char* address, int length, con
 		mc_log_error(ret, "Batch write boolean values failed");
 	}
 
-	// Free memory
-	RELEASE_DATA(bool_array.data);
-
-	// Unlock
-	mc_mutex_unlock(&g_connection_mutex);
 	return ret;
 }
 
@@ -245,15 +206,11 @@ mc_error_code_e mc_write_short_batch(int fd, const char* address, int length, co
 		return MC_ERROR_CODE_INVALID_PARAMETER;
 	}
 
-	// Lock protection
-	mc_mutex_lock(&g_connection_mutex);
-
 	// Create byte array
 	byte_array_info byte_array;
 	byte_array.data = (byte*)malloc(length * 2);
 	if (byte_array.data == NULL) {
 		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "Batch write short integers memory allocation failed");
-		mc_mutex_unlock(&g_connection_mutex);
 		return MC_ERROR_CODE_MALLOC_FAILED;
 	}
 	byte_array.length = length * 2;
@@ -269,11 +226,6 @@ mc_error_code_e mc_write_short_batch(int fd, const char* address, int length, co
 		mc_log_error(ret, "Batch write short integers failed");
 	}
 
-	// Free memory
-	RELEASE_DATA(byte_array.data);
-
-	// Unlock
-	mc_mutex_unlock(&g_connection_mutex);
 	return ret;
 }
 
@@ -284,15 +236,11 @@ mc_error_code_e mc_write_int32_batch(int fd, const char* address, int length, co
 		return MC_ERROR_CODE_INVALID_PARAMETER;
 	}
 
-	// Lock protection
-	mc_mutex_lock(&g_connection_mutex);
-
 	// Create byte array
 	byte_array_info byte_array;
 	byte_array.data = (byte*)malloc(length * 4);
 	if (byte_array.data == NULL) {
 		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "Batch write 32-bit integers memory allocation failed");
-		mc_mutex_unlock(&g_connection_mutex);
 		return MC_ERROR_CODE_MALLOC_FAILED;
 	}
 	byte_array.length = length * 4;
@@ -308,11 +256,6 @@ mc_error_code_e mc_write_int32_batch(int fd, const char* address, int length, co
 		mc_log_error(ret, "Batch write 32-bit integers failed");
 	}
 
-	// Free memory
-	RELEASE_DATA(byte_array.data);
-
-	// Unlock
-	mc_mutex_unlock(&g_connection_mutex);
 	return ret;
 }
 
@@ -323,15 +266,11 @@ mc_error_code_e mc_write_uint32_batch(int fd, const char* address, int length, c
 		return MC_ERROR_CODE_INVALID_PARAMETER;
 	}
 
-	// Lock protection
-	mc_mutex_lock(&g_connection_mutex);
-
 	// Create byte array
 	byte_array_info byte_array;
 	byte_array.data = (byte*)malloc(length * 4);
 	if (byte_array.data == NULL) {
 		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "Batch write unsigned 32-bit integers memory allocation failed");
-		mc_mutex_unlock(&g_connection_mutex);
 		return MC_ERROR_CODE_MALLOC_FAILED;
 	}
 	byte_array.length = length * 4;
@@ -347,11 +286,6 @@ mc_error_code_e mc_write_uint32_batch(int fd, const char* address, int length, c
 		mc_log_error(ret, "Batch write unsigned 32-bit integers failed");
 	}
 
-	// Free memory
-	RELEASE_DATA(byte_array.data);
-
-	// Unlock
-	mc_mutex_unlock(&g_connection_mutex);
 	return ret;
 }
 
@@ -362,15 +296,11 @@ mc_error_code_e mc_write_float_batch(int fd, const char* address, int length, co
 		return MC_ERROR_CODE_INVALID_PARAMETER;
 	}
 
-	// Lock protection
-	mc_mutex_lock(&g_connection_mutex);
-
 	// Create byte array
 	byte_array_info byte_array;
 	byte_array.data = (byte*)malloc(length * 4);
 	if (byte_array.data == NULL) {
 		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "Batch write floating point numbers memory allocation failed");
-		mc_mutex_unlock(&g_connection_mutex);
 		return MC_ERROR_CODE_MALLOC_FAILED;
 	}
 	byte_array.length = length * 4;
@@ -386,11 +316,6 @@ mc_error_code_e mc_write_float_batch(int fd, const char* address, int length, co
 		mc_log_error(ret, "Batch write floating point numbers failed");
 	}
 
-	// Free memory
-	RELEASE_DATA(byte_array.data);
-
-	// Unlock
-	mc_mutex_unlock(&g_connection_mutex);
 	return ret;
 }
 
@@ -401,15 +326,11 @@ mc_error_code_e mc_write_ushort_batch(int fd, const char* address, int length, c
 		return MC_ERROR_CODE_INVALID_PARAMETER;
 	}
 
-	// Lock protection
-	mc_mutex_lock(&g_connection_mutex);
-
 	// Create byte array
 	byte_array_info byte_array;
 	byte_array.data = (byte*)malloc(length * 2);
 	if (byte_array.data == NULL) {
 		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "Batch write unsigned short integers memory allocation failed");
-		mc_mutex_unlock(&g_connection_mutex);
 		return MC_ERROR_CODE_MALLOC_FAILED;
 	}
 	byte_array.length = length * 2;
@@ -425,10 +346,5 @@ mc_error_code_e mc_write_ushort_batch(int fd, const char* address, int length, c
 		mc_log_error(ret, "Batch write unsigned short integers failed");
 	}
 
-	// Free memory
-	RELEASE_DATA(byte_array.data);
-
-	// Unlock
-	mc_mutex_unlock(&g_connection_mutex);
 	return ret;
 }

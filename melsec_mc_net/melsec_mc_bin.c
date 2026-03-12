@@ -11,11 +11,40 @@
 #pragma comment(lib, "ws2_32.lib") /* Linking with winsock library */
 #pragma warning(disable:4996)
 #else
+#include <errno.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #endif
 
 plc_network_address g_network_address;
+
+static mc_error_code_e mc_recv_exact(int fd, byte* buffer, int bytes_to_read)
+{
+	int total_read = 0;
+	while (total_read < bytes_to_read) {
+		int nread = (int)recv(fd, (char*)buffer + total_read, (size_t)(bytes_to_read - total_read), 0);
+		if (nread == 0) {
+			return MC_ERROR_CODE_CONNECTION_CLOSED;
+		}
+		if (nread < 0) {
+#ifdef _WIN32
+			int err = WSAGetLastError();
+			if (err == WSAEINTR) {
+				continue;
+			}
+#else
+			if (errno == EINTR) {
+				continue;
+			}
+#endif
+			return MC_ERROR_CODE_SOCKET_RECV_FAILED;
+		}
+
+		total_read += nread;
+	}
+
+	return MC_ERROR_CODE_SUCCESS;
+}
 
 /**
  * @brief Connect to PLC device
@@ -707,9 +736,8 @@ mc_error_code_e mc_read_plc_type(int fd, char** type)
 		return MC_ERROR_CODE_INVALID_PARAMETER;
 	}
 
+	*type = NULL;
 	mc_error_code_e ret = MC_ERROR_CODE_FAILED;
-	byte_array_info out_bytes;
-	memset(&out_bytes, 0, sizeof(out_bytes));
 
 	// Prepare read PLC type command
 	byte core_cmd_temp[] = { 0x01, 0x01, 0x00, 0x00, 0x01, 0x00 };
@@ -767,6 +795,46 @@ mc_error_code_e mc_read_plc_type(int fd, char** type)
 		return MC_ERROR_CODE_SOCKET_SEND_FAILED;
 	}
 
+	byte_array_info response = { 0 };
+	int recv_size = 0;
+	ret = mc_read_response(fd, &response, &recv_size);
+	if (ret != MC_ERROR_CODE_SUCCESS) {
+		RELEASE_DATA(response.data);
+		mc_log_error(ret, "Read PLC type failed: Read response failed");
+		return ret;
+	}
+
+	if (recv_size < MIN_RESPONSE_HEADER_SIZE) {
+		RELEASE_DATA(response.data);
+		mc_log_error(MC_ERROR_CODE_RESPONSE_HEADER_FAILED, "Read PLC type failed: Response header length insufficient");
+		return MC_ERROR_CODE_RESPONSE_HEADER_FAILED;
+	}
+
+	byte_array_info plc_type_data = { 0 };
+	ret = mc_parse_write_response(response, &plc_type_data);
+	if (ret != MC_ERROR_CODE_SUCCESS) {
+		RELEASE_DATA(response.data);
+		RELEASE_DATA(plc_type_data.data);
+		mc_log_error(ret, "Read PLC type failed: Parse response failed");
+		return ret;
+	}
+
+	char* out = (char*)malloc(plc_type_data.length + 1);
+	if (out == NULL) {
+		RELEASE_DATA(response.data);
+		RELEASE_DATA(plc_type_data.data);
+		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "Read PLC type failed: Memory allocation error");
+		return MC_ERROR_CODE_MALLOC_FAILED;
+	}
+
+	memset(out, 0, plc_type_data.length + 1);
+	if (plc_type_data.length > 0) {
+		memcpy(out, plc_type_data.data, plc_type_data.length);
+	}
+	*type = out;
+
+	RELEASE_DATA(response.data);
+	RELEASE_DATA(plc_type_data.data);
 	return MC_ERROR_CODE_SUCCESS;
 }
 //
@@ -880,38 +948,56 @@ mc_error_code_e mc_read_response(int fd, byte_array_info* response, int* read_co
 		return MC_ERROR_CODE_INVALID_PARAMETER;
 	}
 
-	// Allocate memory
-	byte* temp = (byte*)malloc(BUFFER_SIZE);
+	byte header[MIN_RESPONSE_HEADER_SIZE] = { 0 };
+	mc_error_code_e ret = mc_recv_exact(fd, header, MIN_RESPONSE_HEADER_SIZE);
+	if (ret != MC_ERROR_CODE_SUCCESS) {
+		mc_log_error(ret, "Receive response header failed");
+		return ret;
+	}
+
+	int payload_with_end_code = (int)((unsigned int)header[7] | ((unsigned int)header[8] << 8));
+	if (payload_with_end_code < 2) {
+		mc_log_error(MC_ERROR_CODE_RESPONSE_HEADER_FAILED, "Invalid response length field");
+		return MC_ERROR_CODE_RESPONSE_HEADER_FAILED;
+	}
+
+	int total_len = payload_with_end_code + 9;
+	if (total_len < MIN_RESPONSE_HEADER_SIZE) {
+		mc_log_error(MC_ERROR_CODE_RESPONSE_HEADER_FAILED, "Calculated response length is invalid");
+		return MC_ERROR_CODE_RESPONSE_HEADER_FAILED;
+	}
+
+	byte* temp = (byte*)malloc((size_t)total_len);
 	if (temp == NULL) {
 		mc_log_error(MC_ERROR_CODE_MALLOC_FAILED, "Memory allocation failed: Unable to allocate memory for response data");
 		return MC_ERROR_CODE_MALLOC_FAILED;
 	}
 
-	memset(temp, 0, BUFFER_SIZE);
+	memset(temp, 0, (size_t)total_len);
+	memcpy(temp, header, MIN_RESPONSE_HEADER_SIZE);
+
 	response->data = temp;
-	response->length = BUFFER_SIZE;
+	response->length = total_len;
 
-	*read_count = 0;
-	char* ptr = (char*)response->data;
+	int remain = total_len - MIN_RESPONSE_HEADER_SIZE;
+	if (remain > 0) {
+		ret = mc_recv_exact(fd, temp + MIN_RESPONSE_HEADER_SIZE, remain);
+		if (ret != MC_ERROR_CODE_SUCCESS) {
+			RELEASE_DATA(response->data);
+			response->length = 0;
+			mc_log_error(ret, "Receive response payload failed");
+			return ret;
+		}
+	}
 
-	// Get communication configuration
-	mc_comm_config_t config;
-	mc_get_comm_config(fd, &config);
-
-	// Receive data
-	*read_count = (int)recv(fd, ptr, response->length, 0);
-	if (*read_count < 0) {
+	*read_count = total_len;
+	if (*read_count <= 0) {
 		RELEASE_DATA(response->data);
-		mc_log_error(MC_ERROR_CODE_SOCKET_RECV_FAILED, "Receive data failed: Network error or connection disconnected");
+		response->length = 0;
+		mc_log_error(MC_ERROR_CODE_SOCKET_RECV_FAILED, "Receive data failed: Empty response frame");
 		return MC_ERROR_CODE_SOCKET_RECV_FAILED;
 	}
-	else if (*read_count == 0) {
-		RELEASE_DATA(response->data);
-		mc_log_error(MC_ERROR_CODE_CONNECTION_CLOSED, "Connection closed: Remote device closed the connection");
-		return MC_ERROR_CODE_CONNECTION_CLOSED;
-	}
 
-	response->length = *read_count;
 	return MC_ERROR_CODE_SUCCESS;
 }
 
@@ -994,7 +1080,7 @@ mc_error_code_e mc_read_uint32(int fd, const char* address, uint32* val)
 	byte_array_info read_data;
 	memset(&read_data, 0, sizeof(read_data));
 	ret = read_word_value(fd, address, 2, &read_data);
-	if (ret == MC_ERROR_CODE_SUCCESS && read_data.length >= 2)
+	if (ret == MC_ERROR_CODE_SUCCESS && read_data.length >= 4)
 	{
 		*val = bytes2uint32(read_data.data);
 		RELEASE_DATA(read_data.data);

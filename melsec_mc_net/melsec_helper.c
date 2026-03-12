@@ -298,16 +298,7 @@ byte_array_info build_ascii_write_bit_core_command(melsec_mc_address_data addres
 
 byte_array_info build_bytes_from_address(int address, melsec_mc_data_type type)
 {
-	byte* out = NULL;
-	char buffer[10];
-	memset(buffer, 0, 10);
-
-#ifdef _WIN32
-	_itoa(address, buffer, type.from_base);
-#else
-	itoa(address, buffer, type.from_base);
-#endif
-	address = atoi(buffer);
+	(void)type;
 	return build_ascii_bytes_from_int(address);
 }
 

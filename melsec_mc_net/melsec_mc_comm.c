@@ -21,7 +21,7 @@ bool mc_analysis_address(const char* address, int length, melsec_mc_address_data
 	if (address == NULL || strlen(address) == 0 || out_address_data == NULL)
 		return false;
 
-	memset((void*)out_address_data, 0, sizeof(out_address_data));
+	memset((void*)out_address_data, 0, sizeof(*out_address_data));
 	out_address_data->length = length;
 	switch (address[0]) {
 	case 'M':
@@ -109,7 +109,7 @@ bool mc_analysis_address(const char* address, int length, melsec_mc_address_data
 		const char* real_addr = address + 1;
 		if (address[1] == 'N' || address[1] == 'n') {
 			// Current value of accumulative timer
-			out_address_data->data_type = mc_create_data_type(0xC8, 0x00, "SN", 100);
+			out_address_data->data_type = mc_create_data_type(0xC8, 0x00, "SN", 10);
 			real_addr = address + 2;
 		}
 		else if (address[1] == 'S' || address[1] == 's') {
