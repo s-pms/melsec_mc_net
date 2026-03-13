@@ -5,14 +5,21 @@
 - 支持操作系统：windows/linux
 - 测试设备：QJ71E71 网络扩展卡/FX5U
 
-目前实现功能，实现三菱 PLC 通讯类，采用 Qna 兼容 3E 帧协议实现，需要在 PLC 侧先的以太网模块先进行配置，必须为二进制通讯。
+目前实现功能，实现三菱 PLC 通讯类，采用 Qna 兼容 3E 帧协议实现，需要在 PLC 侧先进行以太网模块配置。当前库已支持 Binary 与 ASCII 两种通讯模式。
 
 ## 头文件
 
 ```c
 #include "melsec_mc_bin.h"  //协议提供方法接口
+#include "melsec_mc_ascii.h" //ASCII 协议接口（函数前缀为 mc_ascii_）
 #include "typedef.h"   //部分类型宏定义
 ```
+
+说明：
+
+- Binary 模式接口前缀：`mc_`
+- ASCII 模式接口前缀：`mc_ascii_`
+- 两套接口语义一致（连接、读写、控制），仅协议编码不同
 
 ## 三菱 PLC 地址说明
 

@@ -2,25 +2,26 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-一个基于 C 语言的三菱 PLC 以太网通信库，采用 MC 协议（QnA 兼容 3E 帧，二进制模式）。
+一个基于 C 语言的三菱 PLC 以太网通信库，采用 MC 协议（QnA 兼容 3E 帧，支持 Binary / ASCII 两种模式）。
 
 ## 项目概览
 
 - 语言：C
 - 平台：Windows / Linux
-- 协议：MC Protocol 3E Frame（Binary）
+- 协议：MC Protocol 3E Frame（Binary / ASCII）
 - 常见测试设备：QJ71E71 网络模块、FX5U
 
 当前代码已提供类型化读写接口、批量读写接口、PLC 远程控制接口，以及通信超时/重试配置能力。并且已增强同一连接上的事务级串行化，避免多线程并发导致响应串包。
 
 ## 核心能力
 
-- PLC 连接与断开
+- PLC 连接与断开（Binary / ASCII）
 - 多类型单值读写
 - 常用类型批量读写
 - 远程运行/停止/复位与 PLC 型号读取
 - 发送/接收超时与重试参数配置
 - 同一 fd 的请求-响应事务串行化
+- `main.c` 支持按协议切换的同流程压测（same-fd / multi-fd）
 
 ## 目录结构
 
@@ -52,6 +53,7 @@ make
 
 ```c
 #include "melsec_mc_bin.h"
+#include "melsec_mc_ascii.h"
 #include "typedef.h"
 ```
 
@@ -65,16 +67,27 @@ if (mc_network_init() != MC_ERROR_CODE_SUCCESS) {
 }
 ```
 
-连接与断开：
+连接与断开（Binary）：
 
 ```c
-int fd = mc_connect("192.168.1.10", 6001, 0, 0);
+int fd = mc_connect("192.168.1.10", 6000, 0, 0);
 if (fd < 0) {
     return -1;
 }
 
 mc_disconnect(fd);
 mc_network_cleanup();
+```
+
+连接与断开（ASCII）：
+
+```c
+int fd = mc_ascii_connect("192.168.1.10", 6000, 0, 0);
+if (fd < 0) {
+    return -1;
+}
+
+mc_ascii_disconnect(fd);
 ```
 
 读写示例：
@@ -160,6 +173,21 @@ mc_error_code_e mc_remote_reset(int fd);
 mc_error_code_e mc_read_plc_type(int fd, char** type);
 ```
 
+### ASCII 接口
+
+ASCII 模式接口与 binary 语义一致，函数名前缀为 `mc_ascii_`，例如：
+
+```c
+int mc_ascii_connect(char* ip_addr, int port, byte network_addr, byte station_addr);
+bool mc_ascii_disconnect(int fd);
+
+mc_error_code_e mc_ascii_read_int32(int fd, const char* address, int32* val);
+mc_error_code_e mc_ascii_write_double(int fd, const char* address, double val);
+mc_error_code_e mc_ascii_read_string(int fd, const char* address, int length, char** val);
+```
+
+头文件：`melsec_mc_ascii.h`
+
 ### 通信参数配置
 
 头文件：`socket.h`
@@ -220,9 +248,18 @@ mc_error_code_e mc_get_comm_config(int fd, mc_comm_config_t* config);
 - 同一 fd 上的请求按事务级串行化（发送 + 接收在同一锁中完成），可避免多线程响应交叉。
 - 不同连接间可并发执行。
 
+## 压测入口
+
+`melsec_mc_net/main.c` 已支持按协议切换压测：
+
+- 在 `test_protocol` 中设置 `"bin"` 或 `"ascii"`
+- 两种协议均走同一压测流程：
+    - `run_same_fd_stress`
+    - `run_multi_fd_stress`
+
 ## 使用限制
 
-- 当前仓库重点维护二进制 MC 通信路径。
+- 部分仿真器或 PLC 侧配置可能不支持远程控制命令（run/stop/reset/type）。
 - 使用前需在 PLC 侧正确配置以太网模块与 MC 协议参数。
 
 ## 常见问题

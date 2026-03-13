@@ -609,7 +609,7 @@ int main(int argc, char** argv)
     }
 
     const char* plc_ip = "127.0.0.1";
-    int plc_port = 6001;
+    int plc_port = 6000;
     int same_fd_threads = 8;
     int same_fd_iterations = 2000;
     int multi_fd_threads = 8;

@@ -2,25 +2,26 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-A C library for Mitsubishi PLC communication over Ethernet using MC Protocol (QnA-compatible 3E frame, binary mode).
+A C library for Mitsubishi PLC communication over Ethernet using MC Protocol (QnA-compatible 3E frame), with both binary and ASCII modes.
 
 ## Overview
 
 - Language: C
 - Platforms: Windows and Linux
-- Protocol: MC Protocol 3E frame (binary)
+- Protocol: MC Protocol 3E frame (binary and ASCII)
 - Typical tested hardware: QJ71E71 network module, FX5U
 
 The library exposes typed read/write APIs, PLC remote control APIs, and batch APIs. It also includes communication timeout/retry configuration and thread-safety improvements for request/response transaction serialization on the same socket.
 
 ## Key Features
 
-- PLC connect/disconnect
+- PLC connect/disconnect (binary and ASCII)
 - Typed single-value read/write
 - Batch read/write for common scalar types
 - Remote run/stop/reset and PLC type query
 - Configurable send/receive timeout and retry strategy
 - Request-response transaction serialization per file descriptor
+- Protocol-switchable stress test in `main.c` (same-fd and multi-fd)
 
 ## Project Layout
 
@@ -52,6 +53,7 @@ Include headers:
 
 ```c
 #include "melsec_mc_bin.h"
+#include "melsec_mc_ascii.h"
 #include "typedef.h"
 ```
 
@@ -65,16 +67,27 @@ if (mc_network_init() != MC_ERROR_CODE_SUCCESS) {
 }
 ```
 
-Connect and disconnect:
+Connect and disconnect (binary):
 
 ```c
-int fd = mc_connect("192.168.1.10", 6001, 0, 0);
+int fd = mc_connect("192.168.1.10", 6000, 0, 0);
 if (fd < 0) {
     return -1;
 }
 
 mc_disconnect(fd);
 mc_network_cleanup();
+```
+
+Connect and disconnect (ASCII):
+
+```c
+int fd = mc_ascii_connect("192.168.1.10", 6000, 0, 0);
+if (fd < 0) {
+    return -1;
+}
+
+mc_ascii_disconnect(fd);
 ```
 
 Read and write examples:
@@ -160,6 +173,21 @@ mc_error_code_e mc_remote_reset(int fd);
 mc_error_code_e mc_read_plc_type(int fd, char** type);
 ```
 
+### ASCII APIs
+
+ASCII mode uses the same semantic API set with `mc_ascii_` prefix, for example:
+
+```c
+int mc_ascii_connect(char* ip_addr, int port, byte network_addr, byte station_addr);
+bool mc_ascii_disconnect(int fd);
+
+mc_error_code_e mc_ascii_read_int32(int fd, const char* address, int32* val);
+mc_error_code_e mc_ascii_write_double(int fd, const char* address, double val);
+mc_error_code_e mc_ascii_read_string(int fd, const char* address, int length, char** val);
+```
+
+Header: `melsec_mc_ascii.h`
+
 ### Communication Configuration
 
 Header: `socket.h`
@@ -218,9 +246,18 @@ For easier migration and one-to-one mapping, the full address list is kept below
 - Requests on the same file descriptor are serialized at transaction level (send + receive) to prevent response interleaving across threads.
 - You can still run parallel workloads across different connections.
 
+## Stress Test Entry
+
+`melsec_mc_net/main.c` supports stress testing with protocol selection:
+
+- Set `test_protocol` to `"bin"` or `"ascii"`
+- Same test workflow is used for both modes:
+    - `run_same_fd_stress`
+    - `run_multi_fd_stress`
+
 ## Limitations
 
-- This repository currently focuses on binary MC communication path.
+- Remote control commands (run/stop/reset/type) may be unsupported by some simulators or restricted by PLC-side permissions/configuration.
 - Please configure the PLC Ethernet module and MC communication parameters before use.
 
 ## Troubleshooting
