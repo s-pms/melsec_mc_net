@@ -1144,7 +1144,7 @@ mc_error_code_e mc_write_bool(int fd, const char* address, bool val)
 		return MC_ERROR_CODE_INVALID_PARAMETER;
 
 	int write_len = 1;
-	bool_array_info write_data;
+	bool_array_info write_data = { 0 };
 	bool* data = (bool*)malloc(write_len);
 	if (data == NULL)
 		return MC_ERROR_CODE_MALLOC_FAILED;
