@@ -1,4 +1,10 @@
-﻿#ifndef __H_ERROR_HANDLER_H__
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2022-2026 wqliceman. All rights reserved.
+ * Maintainer: iceman <wqliceman@gmail.com>
+ */
+
+#ifndef __H_ERROR_HANDLER_H__
 #define __H_ERROR_HANDLER_H__
 
 #include "typedef.h"

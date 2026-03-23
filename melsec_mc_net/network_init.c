@@ -1,4 +1,10 @@
-﻿#include "network_init.h"
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2022-2026 wqliceman. All rights reserved.
+ * Maintainer: iceman <wqliceman@gmail.com>
+ */
+
+#include "network_init.h"
 #include "error_handler.h"
 
 #ifdef _WIN32

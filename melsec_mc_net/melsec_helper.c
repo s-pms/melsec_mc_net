@@ -1,4 +1,10 @@
-﻿#include <string.h>
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2022-2026 wqliceman. All rights reserved.
+ * Maintainer: iceman <wqliceman@gmail.com>
+ */
+
+#include <string.h>
 #include "melsec_helper.h"
 #include "socket.h"
 #include "error_handler.h"

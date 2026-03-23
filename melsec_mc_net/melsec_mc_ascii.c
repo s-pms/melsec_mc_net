@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2022-2026 wqliceman. All rights reserved.
+ * Maintainer: iceman <wqliceman@gmail.com>
+ */
+
 #include "melsec_helper.h"
 #include "melsec_mc_ascii.h"
 

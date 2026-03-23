@@ -1,4 +1,10 @@
-﻿#ifndef __H_BATCH_OPERATION_H__
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2022-2026 wqliceman. All rights reserved.
+ * Maintainer: iceman <wqliceman@gmail.com>
+ */
+
+#ifndef __H_BATCH_OPERATION_H__
 #define __H_BATCH_OPERATION_H__
 
 #include "typedef.h"

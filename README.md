@@ -266,6 +266,12 @@ For easier migration and one-to-one mapping, the full address list is kept below
 - Timeout or intermittent errors: tune `send_timeout_ms`, `recv_timeout_ms`, and retry parameters.
 - Incorrect data: verify device address type and base (decimal/hex by device family).
 
+## Copyright
+
+- Copyright (c) 2022-2026 wqliceman. All rights reserved.
+- GitHub: [iceman](https://github.com/iceman)
+- Email: wqliceman@gmail.com
+
 ## License
 
 See `LICENSE`.

@@ -1,4 +1,10 @@
-﻿#include "socket.h"
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2022-2026 wqliceman. All rights reserved.
+ * Maintainer: iceman <wqliceman@gmail.com>
+ */
+
+#include "socket.h"
 #include <string.h>
 #include "error_handler.h"
 #include "thread_safe.h"

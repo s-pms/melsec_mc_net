@@ -1,4 +1,10 @@
-﻿#include "thread_safe.h"
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2022-2026 wqliceman. All rights reserved.
+ * Maintainer: iceman <wqliceman@gmail.com>
+ */
+
+#include "thread_safe.h"
 #include "error_handler.h"
 
 // Global connection lock

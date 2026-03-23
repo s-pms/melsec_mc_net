@@ -268,6 +268,12 @@ mc_error_code_e mc_get_comm_config(int fd, mc_comm_config_t* config);
 - 超时/偶发失败：根据网络质量调整 timeout 和 retry 参数。
 - 数据异常：检查软元件地址类型与地址进制是否匹配。
 
+## 版权信息
+
+- Copyright (c) 2022-2026 wqliceman. All rights reserved.
+- GitHub 用户名：iceman
+- 邮箱：wqliceman@gmail.com
+
 ## 许可证
 
 见 `LICENSE`。
